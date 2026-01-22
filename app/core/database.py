@@ -33,8 +33,13 @@ async def get_db() -> AsyncSession:
 # Database health check
 async def check_db_health():
     try:
+        from sqlalchemy import text
         async with engine.connect() as conn:
-            await conn.execute("SELECT 1")
+            await conn.execute(text("SELECT 1"))
         return True
-    except Exception:
+    except Exception as e:
+        # Log the actual error for debugging
+        print(f"Database health check failed: {type(e).__name__}: {e}")
         return False
+
+

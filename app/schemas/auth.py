@@ -2,6 +2,7 @@
 Authentication schemas for the SpendWise SA API.
 """
 
+import uuid
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, validator
@@ -41,10 +42,17 @@ class UserLogin(BaseModel):
 
 class UserOut(BaseModel):
     """Schema for user response (without sensitive data)."""
-    id: str  # UUID will be converted to string
+    id: str  # UUID as string
     email: EmailStr
     full_name: str
     created_at: datetime
+
+    @validator('id', pre=True)
+    def convert_uuid_to_str(cls, v):
+        """Convert UUID object to string."""
+        if isinstance(v, uuid.UUID):
+            return str(v)
+        return v
 
     class Config:
         orm_mode = True

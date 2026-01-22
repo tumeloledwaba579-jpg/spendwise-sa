@@ -9,7 +9,7 @@ alembic==1.13.1
 
 # Pydantic (MUST BE 1.x for FastAPI 0.104.1)
 pydantic==1.10.13
-pydantic-settings==2.1.0
+email-validator==2.1.0  # Required for EmailStr validation
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
