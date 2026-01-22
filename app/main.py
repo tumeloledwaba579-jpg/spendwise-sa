@@ -1,8 +1,10 @@
 ﻿from fastapi import FastAPI
+from app.api.v1.endpoints.auth import router as auth_router
 from app.core.database import engine, Base
 import asyncio
 
 app = FastAPI(title="SpendWise SA", version="1.0.0")
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 
 @app.on_event("startup")
 async def startup_event():
@@ -19,3 +21,5 @@ async def health_check():
     from app.core.database import check_db_health
     db_health = await check_db_health()
     return {"status": "healthy" if db_health else "unhealthy", "database": "connected" if db_health else "disconnected"}
+
+
