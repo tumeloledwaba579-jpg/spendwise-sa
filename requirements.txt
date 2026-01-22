@@ -1,21 +1,24 @@
-﻿# Core Framework (TESTED COMPATIBLE SET)
+﻿# Core Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
-# Database & ORM (SQLAlchemy 2.0 + asyncpg)
+# Database & ORM
 sqlalchemy==2.0.23
 asyncpg==0.29.0
 alembic==1.13.1
 
 # Pydantic (MUST BE 1.x for FastAPI 0.104.1)
 pydantic==1.10.13
+pydantic-settings==2.1.0
 
-# Authentication & Security (COMPATIBLE VERSIONS)
+# Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-bcrypt==3.2.0  # Last version compatible with passlib 1.7.4
+bcrypt==3.2.0
 
 # Environment & Utilities
 python-dotenv==1.0.0
 python-multipart==0.0.6
-httpx
+
+# Development Tools (optional)
+black==23.11.0

@@ -1,4 +1,4 @@
-﻿from pydantic import BaseSettings
+﻿from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database configuration
@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str = "5432"
     DATABASE_URL: str = "postgresql+asyncpg://postgres:root123@postgres:5432/spendwise_db"
     
-    # JWT configuration (for future authentication)
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    # JWT configuration (for authentication)
+    SECRET_KEY: str = "your-secret-key-change-in-production-32-characters-minimum"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
