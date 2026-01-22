@@ -35,7 +35,7 @@ async def get_current_user(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     
-    return UserOut.from_orm(user)
+    return UserOut.from_user_model(user)
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -45,7 +45,7 @@ async def register(
     auth_service = AuthService(session)
     try:
         user = await auth_service.create_user(user_in)
-        return UserOut.from_orm(user)
+        return UserOut.from_user_model(user)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -80,3 +80,5 @@ async def login(
 @router.get("/me", response_model=UserOut)
 async def read_users_me(current_user: UserOut = Depends(get_current_user)):
     return current_user
+
+
