@@ -18,3 +18,4 @@ bcrypt==3.2.0  # Last version compatible with passlib 1.7.4
 # Environment & Utilities
 python-dotenv==1.0.0
 python-multipart==0.0.6
+httpx
