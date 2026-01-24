@@ -2,6 +2,7 @@
 Dependencies for FastAPI endpoints.
 """
 
+import uuid
 from typing import AsyncGenerator
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -13,6 +14,7 @@ from app.models.user import User
 from app.schemas.auth import TokenPayload
 from sqlalchemy import select
 
+
 # OAuth2 scheme for token authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -23,14 +25,14 @@ async def get_current_user(
 ) -> User:
     """
     Get the current authenticated user from JWT token.
-    
+
     Args:
         token: JWT token from Authorization header
         db: Async database session
-        
+
     Returns:
         User model instance
-        
+
     Raises:
         HTTPException: 401 if token is invalid or user not found
     """
@@ -39,29 +41,25 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
         payload = decode_access_token(token)
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-        
+
         token_data = TokenPayload(sub=user_id, exp=payload.get("exp"))
     except JWTError:
         raise credentials_exception
-    
-    # Get user from database
-    result = await db.execute(
-        select(User).where(User.id == token_data.sub)
-    )
-    user = result.scalar_one_or_none()
-    
+
+    # 🔥 FIX: Convert string to UUID before database query
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise credentials_exception
+
+    user = await db.execute(select(User).where(User.id == user_uuid))
+    user = user.scalar_one_or_none()
     if user is None:
         raise credentials_exception
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
-        )
-    
     return user

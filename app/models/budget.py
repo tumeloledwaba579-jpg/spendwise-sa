@@ -6,10 +6,10 @@ from app.core.database import Base
 import enum
 
 class BudgetPeriod(enum.Enum):
-    MONTHLY = "monthly"
-    QUARTERLY = "quarterly"
-    YEARLY = "yearly"
-    WEEKLY = "weekly"
+    MONTHLY = "MONTHLY"
+    QUARTERLY = "QUARTERLY"
+    YEARLY = "YEARLY"
+    WEEKLY = "WEEKLY"
 
 class Budget(Base):
     __tablename__ = "budgets"
@@ -21,7 +21,7 @@ class Budget(Base):
     name = Column(String(100), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(3), default="USD", nullable=False)
-    period = Column(Enum(BudgetPeriod), nullable=False, default=BudgetPeriod.MONTHLY)
+    period = Column(Enum(BudgetPeriod, create_constraint=True, values_callable=lambda x: [e.value for e in BudgetPeriod]), nullable=False, default=BudgetPeriod.MONTHLY)
     start_date = Column(DateTime(timezone=True), nullable=False)
     end_date = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
@@ -43,3 +43,6 @@ class Budget(Base):
     
     def __repr__(self):
         return f"<Budget(id={self.id}, name={self.name}, amount={self.amount})>"
+
+
+

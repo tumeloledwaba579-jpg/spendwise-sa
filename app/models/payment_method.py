@@ -6,12 +6,12 @@ from app.core.database import Base
 import enum
 
 class PaymentMethodType(enum.Enum):
-    CREDIT_CARD = "credit_card"
-    DEBIT_CARD = "debit_card"
-    BANK_TRANSFER = "bank_transfer"
-    CASH = "cash"
-    DIGITAL_WALLET = "digital_wallet"
-    OTHER = "other"
+    CREDIT_CARD = "CREDIT_CARD"
+    DEBIT_CARD = "DEBIT_CARD"
+    BANK_TRANSFER = "BANK_TRANSFER"
+    CASH = "CASH"
+    DIGITAL_WALLET = "DIGITAL_WALLET"
+    OTHER = "OTHER"
 
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
@@ -19,7 +19,7 @@ class PaymentMethod(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100), nullable=False)
-    payment_type = Column(Enum(PaymentMethodType), nullable=False)
+    payment_type = Column(Enum(PaymentMethodType, create_constraint=True, values_callable=lambda x: [e.value for e in PaymentMethodType]), nullable=False)
     last_four = Column(String(4), nullable=True)  # For cards: last 4 digits
     is_active = Column(Boolean, default=True)
     is_default = Column(Boolean, default=False)
@@ -32,3 +32,5 @@ class PaymentMethod(Base):
     
     def __repr__(self):
         return f"<PaymentMethod(id={self.id}, name={self.name}, type={self.payment_type})>"
+
+

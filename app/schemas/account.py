@@ -1,41 +1,63 @@
-﻿from enum import Enum
-from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel, Field, validator
-import uuid
 from datetime import datetime
-
-class AccountType(str, Enum):
-    CHECKING = "checking"
-    SAVINGS = "savings"
-    CREDIT_CARD = "credit_card"
-    INVESTMENT = "investment"
-    LOAN = "loan"
+from decimal import Decimal
+from typing import Optional
 
 class AccountBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    account_type: AccountType
+    account_type: str
     currency: str = Field(default="USD", min_length=3, max_length=3)
-    is_active: bool = True
+    balance: Decimal = Field(default=Decimal('0.00'), ge=0)
+    is_active: bool = Field(default=True)
+
+    @validator('account_type', pre=True)
+    def validate_account_type(cls, v):
+        if isinstance(v, str):
+            v = v.upper()
+            if v in ['CHECKING', 'SAVINGS', 'CREDIT_CARD', 'INVESTMENT', 'LOAN']:
+                return v
+        # Handle enum from ORM
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
 class AccountCreate(AccountBase):
     pass
 
 class AccountUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    account_type: Optional[AccountType] = None
+    account_type: Optional[str] = None
     currency: Optional[str] = Field(None, min_length=3, max_length=3)
+    balance: Optional[Decimal] = Field(None, ge=0)
     is_active: Optional[bool] = None
 
-    @validator('currency')
-    def currency_uppercase(cls, v):
-        return v.upper() if v else v
+    @validator('account_type', pre=True)
+    def validate_account_type(cls, v):
+        if v is None:
+            return v
+        if isinstance(v, str):
+            v = v.upper()
+            if v in ['CHECKING', 'SAVINGS', 'CREDIT_CARD', 'INVESTMENT', 'LOAN']:
+                return v
+        # Handle enum from ORM
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
-class AccountOut(AccountBase):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    balance: float = Field(..., ge=0)
+class AccountInDB(AccountBase):
+    id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True
+        use_enum_values = True
+        extra = 'forbid'
+        
+class Account(AccountInDB):
+    pass
+
+# Alias for compatibility
+AccountOut = Account

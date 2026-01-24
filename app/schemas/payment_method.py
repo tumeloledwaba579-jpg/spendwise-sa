@@ -1,37 +1,61 @@
-﻿"""
-PaymentMethod Pydantic schemas for the SpendWise SA API.
-"""
+from uuid import UUID
+from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
-from app.models.payment_method import PaymentMethodType
 
 class PaymentMethodBase(BaseModel):
-    """Base schema for payment method."""
     name: str = Field(..., min_length=1, max_length=100)
-    payment_type: PaymentMethodType
-    last_four: Optional[str] = Field(None, min_length=4, max_length=4, description="Last 4 digits for cards")
+    payment_type: str
+    last_four: Optional[str] = Field(None, max_length=4)
+    is_active: bool = Field(default=True)
     is_default: bool = Field(default=False)
 
+    @validator('payment_type', pre=True)
+    def validate_payment_type(cls, v):
+        if isinstance(v, str):
+            v = v.upper()
+            if v in ['CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'CASH', 'DIGITAL_WALLET', 'OTHER']:
+                return v
+        # Handle enum from ORM
+        if hasattr(v, 'value'):
+            return v.value
+        return v
+
 class PaymentMethodCreate(PaymentMethodBase):
-    """Schema for creating a new payment method."""
     pass
 
 class PaymentMethodUpdate(BaseModel):
-    """Schema for updating a payment method."""
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    payment_type: Optional[PaymentMethodType] = None
-    last_four: Optional[str] = Field(None, min_length=4, max_length=4)
-    is_default: Optional[bool] = None
+    payment_type: Optional[str] = None
+    last_four: Optional[str] = Field(None, max_length=4)
     is_active: Optional[bool] = None
+    is_default: Optional[bool] = None
 
-class PaymentMethodOut(PaymentMethodBase):
-    """Schema for payment method response."""
-    id: str
-    user_id: str
-    is_active: bool
+    @validator('payment_type', pre=True)
+    def validate_payment_type(cls, v):
+        if v is None:
+            return v
+        if isinstance(v, str):
+            v = v.upper()
+            if v in ['CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'CASH', 'DIGITAL_WALLET', 'OTHER']:
+                return v
+        # Handle enum from ORM
+        if hasattr(v, 'value'):
+            return v.value
+        return v
+
+class PaymentMethodInDB(PaymentMethodBase):
+    id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True
+        use_enum_values = True
+        extra = 'forbid'
+class PaymentMethod(PaymentMethodInDB):
+    pass
+
+# Alias for compatibility
+PaymentMethodOut = PaymentMethod

@@ -66,7 +66,34 @@ Uses JWT tokens for secure API access.
         }
     ]
 )
+# Add this after app creation, before router includes
 
+@app.on_event("startup")
+async def startup_validation():
+    """Run critical system validation checks on startup"""
+    print("\n=== SYSTEM STARTUP VALIDATION ===\n")
+    
+    try:
+        # Check 1: No duplicate enums
+        from app.core.schema_model_validator import check_no_duplicate_enums
+        check_no_duplicate_enums()
+        print("✓ No duplicate enums found")
+        
+        # Check 2: Schema/model alignment
+        from app.core.schema_model_validator import check_schema_model_alignment
+        check_schema_model_alignment()
+        print("✓ Schema/model alignment verified")
+        
+        # Check 3: Pydantic configs are safe
+        from app.core.schema_model_validator import check_pydantic_configs
+        check_pydantic_configs()
+        print("✓ Pydantic configurations validated")
+        
+        print("\n✅ All startup checks passed!\n")
+        
+    except Exception as e:
+        print(f"\n❌ STARTUP FAILED: {e}\n")
+        raise
 # Health endpoint - add this BEFORE the CORS middleware for immediate access
 @app.get("/health", tags=["health"])
 async def health_check():

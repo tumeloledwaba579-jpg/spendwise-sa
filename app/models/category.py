@@ -6,9 +6,9 @@ from app.core.database import Base
 import enum
 
 class CategoryType(enum.Enum):
-    INCOME = "income"
-    EXPENSE = "expense"
-    TRANSFER = "transfer"
+    INCOME = "INCOME"
+    EXPENSE = "EXPENSE"
+    TRANSFER = "TRANSFER"
 
 class Category(Base):
     __tablename__ = "categories"
@@ -17,7 +17,7 @@ class Category(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(String, nullable=True)
-    category_type = Column(Enum(CategoryType), nullable=False)
+    category_type = Column(Enum(CategoryType, create_constraint=True, values_callable=lambda x: [e.value for e in CategoryType]), nullable=False)
     icon = Column(String(50), nullable=True)
     color = Column(String(7), nullable=True)
     parent_id = Column(UUID(as_uuid=True), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
@@ -40,3 +40,7 @@ class Category(Base):
     
     def __repr__(self):
         return f"<Category(id={self.id}, name={self.name}, type={self.category_type})>"
+
+
+
+

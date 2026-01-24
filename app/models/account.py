@@ -6,11 +6,11 @@ from app.core.database import Base
 import enum
 
 class AccountType(enum.Enum):
-    CHECKING = "checking"
-    SAVINGS = "savings"
-    CREDIT_CARD = "credit_card"
-    INVESTMENT = "investment"
-    LOAN = "loan"
+    CHECKING = "CHECKING"
+    SAVINGS = "SAVINGS"
+    CREDIT_CARD = "CREDIT_CARD"
+    INVESTMENT = "INVESTMENT"
+    LOAN = "LOAN"
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -18,7 +18,7 @@ class Account(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
-    account_type = Column(Enum(AccountType), nullable=False)
+    account_type = Column(Enum(AccountType, create_constraint=True, values_callable=lambda x: [e.value for e in AccountType]), nullable=False)
     balance = Column(Numeric(12, 2), default=0.00, nullable=False)
     currency = Column(String(3), default="USD", nullable=False)
     is_active = Column(Boolean, default=True)
@@ -31,4 +31,7 @@ class Account(Base):
     
     def __repr__(self):
         return f"<Account(id={self.id}, name={self.name}, balance={self.balance})>"
+
+
+
 
