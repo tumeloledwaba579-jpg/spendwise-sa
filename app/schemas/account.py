@@ -17,10 +17,11 @@ class AccountBase(BaseModel):
             v = v.upper()
             if v in ['CHECKING', 'SAVINGS', 'CREDIT_CARD', 'INVESTMENT', 'LOAN']:
                 return v
+            raise ValueError(f"Invalid account_type: {v}")
         # Handle enum from ORM
         if hasattr(v, 'value'):
             return v.value
-        return v
+        raise ValueError(f"Invalid account_type: {v}")
 
 class AccountCreate(AccountBase):
     pass
@@ -40,10 +41,11 @@ class AccountUpdate(BaseModel):
             v = v.upper()
             if v in ['CHECKING', 'SAVINGS', 'CREDIT_CARD', 'INVESTMENT', 'LOAN']:
                 return v
+            raise ValueError(f"Invalid account_type: {v}")
         # Handle enum from ORM
         if hasattr(v, 'value'):
             return v.value
-        return v
+        raise ValueError(f"Invalid account_type: {v}")
 
 class AccountInDB(AccountBase):
     id: UUID
@@ -55,7 +57,7 @@ class AccountInDB(AccountBase):
         orm_mode = True
         use_enum_values = True
         extra = 'forbid'
-        
+
 class Account(AccountInDB):
     pass
 

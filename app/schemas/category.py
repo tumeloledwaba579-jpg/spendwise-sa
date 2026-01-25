@@ -1,13 +1,10 @@
 from uuid import UUID
-from enum import Enum
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional
 
-class CategoryType(str, Enum):
-    INCOME = "INCOME"
-    EXPENSE = "EXPENSE"
-    TRANSFER = "TRANSFER"
+# Import enum from models, don't redefine it
+from app.models.category import CategoryType
 
 class CategoryBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -25,10 +22,11 @@ class CategoryBase(BaseModel):
             v = v.upper()
             if v in ['INCOME', 'EXPENSE', 'TRANSFER']:
                 return v
+            raise ValueError(f"Invalid category_type: {v}")
         # Handle enum from ORM
         if hasattr(v, 'value'):
             return v.value
-        return v
+        raise ValueError(f"Invalid category_type: {v}")
 
 class CategoryCreate(CategoryBase):
     pass
@@ -51,10 +49,11 @@ class CategoryUpdate(BaseModel):
             v = v.upper()
             if v in ['INCOME', 'EXPENSE', 'TRANSFER']:
                 return v
+            raise ValueError(f"Invalid category_type: {v}")
         # Handle enum from ORM
         if hasattr(v, 'value'):
             return v.value
-        return v
+        raise ValueError(f"Invalid category_type: {v}")
 
 class CategoryInDB(CategoryBase):
     id: UUID
@@ -67,6 +66,7 @@ class CategoryInDB(CategoryBase):
         orm_mode = True
         use_enum_values = True
         extra = 'forbid'
+
 class Category(CategoryInDB):
     pass
 

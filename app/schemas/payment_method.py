@@ -16,10 +16,11 @@ class PaymentMethodBase(BaseModel):
             v = v.upper()
             if v in ['CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'CASH', 'DIGITAL_WALLET', 'OTHER']:
                 return v
+            raise ValueError(f"Invalid payment_type: {v}")
         # Handle enum from ORM
         if hasattr(v, 'value'):
             return v.value
-        return v
+        raise ValueError(f"Invalid payment_type: {v}")
 
 class PaymentMethodCreate(PaymentMethodBase):
     pass
@@ -39,10 +40,11 @@ class PaymentMethodUpdate(BaseModel):
             v = v.upper()
             if v in ['CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'CASH', 'DIGITAL_WALLET', 'OTHER']:
                 return v
+            raise ValueError(f"Invalid payment_type: {v}")
         # Handle enum from ORM
         if hasattr(v, 'value'):
             return v.value
-        return v
+        raise ValueError(f"Invalid payment_type: {v}")
 
 class PaymentMethodInDB(PaymentMethodBase):
     id: UUID
@@ -54,6 +56,7 @@ class PaymentMethodInDB(PaymentMethodBase):
         orm_mode = True
         use_enum_values = True
         extra = 'forbid'
+
 class PaymentMethod(PaymentMethodInDB):
     pass
 
