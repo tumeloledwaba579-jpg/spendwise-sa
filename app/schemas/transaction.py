@@ -44,3 +44,5 @@ class TransactionOut(TransactionBase):
 
     class Config:
         orm_mode = True
+        use_enum_values = True
+        extra = 'forbid'

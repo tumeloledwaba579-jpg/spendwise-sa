@@ -36,3 +36,5 @@ class TransactionPaymentOut(TransactionPaymentBase):
 
     class Config:
         orm_mode = True
+        use_enum_values = True
+        extra = 'forbid'

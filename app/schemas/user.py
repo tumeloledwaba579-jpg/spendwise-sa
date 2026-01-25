@@ -29,6 +29,8 @@ class UserProfileOut(BaseModel):
 
     class Config:
         orm_mode = True
+        use_enum_values = True
+        extra = 'forbid'
 
 class UserStatsOut(BaseModel):
     """Schema for user statistics."""
@@ -38,3 +40,8 @@ class UserStatsOut(BaseModel):
     total_categories: int
     total_payment_methods: int
     last_login: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+        use_enum_values = True
+        extra = 'forbid'
