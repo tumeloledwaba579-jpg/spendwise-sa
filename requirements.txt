@@ -1,4 +1,4 @@
-﻿# Core Framework
+# Core Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
@@ -7,23 +7,19 @@ sqlalchemy==2.0.23
 asyncpg==0.31.0
 alembic==1.13.1
 
-# Pydantic (MUST BE 1.x for FastAPI 0.104.1)
+# Pydantic
 pydantic==1.10.13
-email-validator==2.1.0  # Required for EmailStr validation
+email-validator==2.1.0
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-bcrypt==3.2.0
 
 # Environment & Utilities
 python-dotenv==1.0.0
 python-multipart==0.0.6
 
-# Development Tools (optional)
-black==23.11.0
+# Testing (optional)
 pytest==7.4.3
 pytest-asyncio==0.21.1
-pytest-cov==4.1.0
 httpx==0.25.2
-aiosqlite==0.19.0

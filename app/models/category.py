@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
 
-class CategoryType(enum.Enum):
+class CategoryType(str , enum.Enum):
     INCOME = "INCOME"
     EXPENSE = "EXPENSE"
     TRANSFER = "TRANSFER"
