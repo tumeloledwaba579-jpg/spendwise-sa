@@ -1,4 +1,4 @@
-from pydantic import BaseSettings
+﻿from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     # Database configuration
@@ -21,6 +21,7 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
+
 
 
 
