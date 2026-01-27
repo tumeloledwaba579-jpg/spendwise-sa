@@ -5,19 +5,32 @@ import json
 import logging
 from typing import Any, Optional
 from datetime import timedelta
-import redis.asyncio as redis
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Try to import redis, but make it optional
+try:
+    import redis.asyncio as redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    logger.warning("Redis not installed. Caching disabled.")
+
+from app.core.config import settings
+
 
 class CacheService:
     """Redis cache service for distributed caching."""
     
-    _redis: Optional[redis.Redis] = None
+    _redis: Optional[Any] = None
     
     @classmethod
     async def init(cls):
         """Initialize Redis connection."""
+        if not REDIS_AVAILABLE:
+            logger.info("Redis caching disabled (module not installed)")
+            return
+        
         try:
             cls._redis = await redis.from_url(
                 f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}",
@@ -31,7 +44,7 @@ class CacheService:
             await cls._redis.ping()
             logger.info("Redis cache initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+            logger.warning(f"Failed to connect to Redis: {e}. Caching disabled.")
             cls._redis = None
     
     @classmethod

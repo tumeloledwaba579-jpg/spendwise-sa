@@ -1,21 +1,20 @@
-from contextlib import asynccontextmanager
+﻿from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import logging
 from app.core.config import settings
+from app.services.cache_service import CacheService
 from app.api.v1.endpoints import (
     accounts,
-    assets,
     auth,
     budgets,
     categories,
-    debts,
-    income,
-    net_worth,
     payment_methods,
     transactions,
-    transaction_payments
+    transaction_payments,
+    income,
+    debt
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -26,8 +25,9 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown events."""
     await startup_validation()
+    await CacheService.init()
     yield
-    pass
+    await CacheService.close()
 
 
 async def startup_validation():
@@ -71,14 +71,9 @@ def create_application() -> FastAPI:
     app.include_router(transactions.router, prefix="/api/v1", tags=["transactions"])
     app.include_router(transaction_payments.router, prefix="/api/v1", tags=["transaction-payments"])
     app.include_router(income.router, prefix="/api/v1", tags=["income"])
-    app.include_router(debts.router, prefix="/api/v1", tags=["debts"])
-    app.include_router(assets.router, prefix="/api/v1", tags=["assets"])
-    app.include_router(net_worth.router, prefix="/api/v1", tags=["net-worth"])
+    app.include_router(debt.router, prefix="/api/v1", tags=["debts"])
     
     return app
 
 
 app = create_application()
-
-
-
