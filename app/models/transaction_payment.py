@@ -2,7 +2,7 @@
 from sqlalchemy import Column, String, Numeric, DateTime, ForeignKey, func, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.core.database import Base
+from app.models.base import Base
 
 class TransactionPayment(Base):
     __tablename__ = "transaction_payments"
@@ -29,3 +29,4 @@ class TransactionPayment(Base):
     
     def __repr__(self):
         return f"<TransactionPayment(id={self.id}, amount={self.amount})>"
+

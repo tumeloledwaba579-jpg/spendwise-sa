@@ -2,7 +2,7 @@
 from sqlalchemy import Column, String, Numeric, DateTime, ForeignKey, func, Enum, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.core.database import Base
+from app.models.base import Base
 import enum
 
 class AccountType(enum.Enum):
@@ -31,6 +31,7 @@ class Account(Base):
     
     def __repr__(self):
         return f"<Account(id={self.id}, name={self.name}, balance={self.balance})>"
+
 
 
 

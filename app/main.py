@@ -1,6 +1,7 @@
 ﻿from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 import logging
 from app.core.config import settings
 from app.api.v1.endpoints import (
@@ -44,6 +45,9 @@ def create_application() -> FastAPI:
         docs_url="/api/v1/docs",
         redoc_url="/api/v1/redoc"
     )
+    
+    # Add GZip compression for response payloads (OPTIMIZATION)
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
     
     # Set up CORS
     if hasattr(settings, 'BACKEND_CORS_ORIGINS') and settings.BACKEND_CORS_ORIGINS:

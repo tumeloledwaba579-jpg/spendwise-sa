@@ -1,4 +1,4 @@
-"""
+﻿"""
 SQLAlchemy models for income tracking module.
 """
 import uuid
@@ -10,7 +10,7 @@ from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.core.database import Base
+from app.models.base import Base
 
 
 # ============================================================================
@@ -191,3 +191,4 @@ class IncomeMonthlySummary(Base):
     
     def __repr__(self):
         return f"<IncomeMonthlySummary(user_id={self.user_id}, period={self.year}-{self.month:02d}, total_income={self.total_income})>"
+

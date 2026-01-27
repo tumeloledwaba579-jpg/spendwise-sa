@@ -2,7 +2,7 @@
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, func, Enum, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.core.database import Base
+from app.models.base import Base
 import enum
 
 class CategoryType(str , enum.Enum):
@@ -40,6 +40,7 @@ class Category(Base):
     
     def __repr__(self):
         return f"<Category(id={self.id}, name={self.name}, type={self.category_type})>"
+
 
 
 

@@ -1,45 +1,43 @@
-﻿from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base
+﻿"""
+Database configuration and session management for async SQLAlchemy.
+"""
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-# Create async engine
+# Create async engine with optimized connection pooling
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True,  # Set to False in production
-    future=True,
+    echo=False,
+    pool_size=20,
+    max_overflow=10,
     pool_pre_ping=True,
-    pool_recycle=300
+    pool_recycle=3600
 )
 
 # Create async session factory
-AsyncSessionLocal = async_sessionmaker(
+async_session = sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
-    autocommit=False,
     autoflush=False
 )
 
-Base = declarative_base()
 
-# Dependency to get DB session
 async def get_db() -> AsyncSession:
-    async with AsyncSessionLocal() as session:
+    """
+    Get database session for dependency injection.
+    
+    Yields:
+        AsyncSession: Database session
+    """
+    async with async_session() as session:
         try:
             yield session
         finally:
             await session.close()
 
-# Database health check
-async def check_db_health():
-    try:
-        from sqlalchemy import text
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-        return True
-    except Exception as e:
-        # Log the actual error for debugging
-        print(f"Database health check failed: {type(e).__name__}: {e}")
-        return False
 
-
+async def close_db():
+    """Close database connection."""
+    await engine.dispose()

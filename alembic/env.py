@@ -9,7 +9,8 @@ from pathlib import Path
 # Add the app directory to the path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.core.database import Base
+from app.core.database import engine
+from app.models.base import Base
 from app.models import *
 
 # this is the Alembic Config object
@@ -55,3 +56,4 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+

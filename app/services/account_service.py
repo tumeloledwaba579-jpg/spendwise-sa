@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from app.models.account import Account, AccountType
 from app.models.user import User
 from app.schemas.account import AccountCreate, AccountUpdate
-from app.core.database import AsyncSessionLocal
+from app.core.database import get_db
 
 class AccountService:
     @staticmethod
@@ -121,3 +121,4 @@ class AccountService:
         result = await session.execute(stmt)
         await session.commit()
         return result.scalar_one_or_none()
+
