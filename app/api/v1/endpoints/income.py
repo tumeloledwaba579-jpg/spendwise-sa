@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.schemas.income import (
     IncomeSourceCreate, IncomeSourceInDB, IncomeSourceUpdate,
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/income", tags=["income"])
 async def create_income_source(
     income_in: IncomeSourceCreate,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Create a new income source.
@@ -50,7 +50,7 @@ async def create_income_source(
 async def list_income_sources(
     active_only: bool = True,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     List all income sources for the current user.
@@ -64,7 +64,7 @@ async def list_income_sources(
 async def get_income_source(
     source_id: UUID,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Get details of a specific income source."""
     source = await IncomeService.get_income_source(session, current_user.id, source_id)
@@ -78,7 +78,7 @@ async def update_income_source(
     source_id: UUID,
     income_update: IncomeSourceUpdate,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Update an income source."""
     source = await IncomeService.update_income_source(session, current_user.id, source_id, income_update)
@@ -91,7 +91,7 @@ async def update_income_source(
 async def deactivate_income_source(
     source_id: UUID,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Deactivate (soft delete) an income source."""
     source = await IncomeService.deactivate_income_source(session, current_user.id, source_id)
@@ -107,7 +107,7 @@ async def deactivate_income_source(
 async def record_income(
     income_in: IncomeHistoryCreate,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Record actual income received (manual entry).
@@ -127,7 +127,7 @@ async def get_income_history(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get income history with optional filters.
@@ -150,7 +150,7 @@ async def get_monthly_summary(
     year: int,
     month: int,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get income summary for a specific month.
@@ -179,7 +179,7 @@ async def get_monthly_summary(
 @router.get("/predict/next-month")
 async def predict_next_month(
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Predict income for next month based on recurring sources.
@@ -199,7 +199,7 @@ async def predict_next_month(
 async def get_income_stats(
     year: Optional[int] = None,
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get income statistics for the year.
@@ -224,5 +224,6 @@ async def get_income_stats(
 async def health_check():
     """Health check endpoint for income module."""
     return {"status": "healthy", "module": "income"}
+
 
 

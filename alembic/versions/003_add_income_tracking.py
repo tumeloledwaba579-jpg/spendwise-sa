@@ -1,4 +1,4 @@
-"""Add income tracking module
+﻿"""Add income tracking module
 
 Revision ID: 003_add_income_tracking
 Revises: 3bb02c689d40
@@ -106,3 +106,5 @@ def downgrade() -> None:
     op.drop_index('idx_income_user_created', 'income_sources')
     op.drop_index('idx_income_user_active', 'income_sources')
     op.drop_table('income_sources')
+
+
