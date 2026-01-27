@@ -1,4 +1,4 @@
-﻿from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -6,13 +6,16 @@ import logging
 from app.core.config import settings
 from app.api.v1.endpoints import (
     accounts,
+    assets,
     auth,
     budgets,
     categories,
+    debts,
+    income,
+    net_worth,
     payment_methods,
     transactions,
-    transaction_payments,
-    income
+    transaction_payments
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -68,8 +71,14 @@ def create_application() -> FastAPI:
     app.include_router(transactions.router, prefix="/api/v1", tags=["transactions"])
     app.include_router(transaction_payments.router, prefix="/api/v1", tags=["transaction-payments"])
     app.include_router(income.router, prefix="/api/v1", tags=["income"])
+    app.include_router(debts.router, prefix="/api/v1", tags=["debts"])
+    app.include_router(assets.router, prefix="/api/v1", tags=["assets"])
+    app.include_router(net_worth.router, prefix="/api/v1", tags=["net-worth"])
     
     return app
 
 
 app = create_application()
+
+
+

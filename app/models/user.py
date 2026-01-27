@@ -1,8 +1,12 @@
-﻿import uuid
+﻿"""
+User model for authentication and data ownership.
+"""
+import uuid
 from sqlalchemy import Column, String, Boolean, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.models.base import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -34,6 +38,12 @@ class User(Base):
     income_history = relationship("IncomeHistory", back_populates="user", cascade="all, delete-orphan")
     income_monthly_summary = relationship("IncomeMonthlySummary", back_populates="user", cascade="all, delete-orphan")
 
+    # =========================================================================
+    # Phase 2b: Debt Management Relationships
+    # =========================================================================
+    debt_accounts = relationship("DebtAccount", back_populates="user", cascade="all, delete-orphan")
+    debt_payments = relationship("DebtPayment", back_populates="user", cascade="all, delete-orphan")
+    debt_snapshots = relationship("DebtSnapshot", back_populates="user", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"
-
