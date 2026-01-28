@@ -1,16 +1,9 @@
 ﻿"""
-Minimal conftest.py for pytest.
+Pytest configuration for app tests.
+Fixes Python path issues.
 """
-import pytest
-import asyncio
+import sys
+import os
 
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create event loop for async tests."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-# Add any other minimal fixtures here
+# Add parent directory to path so 'app' can be imported
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))

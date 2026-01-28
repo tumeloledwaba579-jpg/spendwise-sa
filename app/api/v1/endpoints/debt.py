@@ -8,7 +8,7 @@ from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_db, get_current_user
+from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.services.debt_service import DebtService
 from app.schemas.debt import (
@@ -195,4 +195,5 @@ async def calculate_payoff_strategy(
 async def health_check():
     """Health check endpoint for debt module."""
     return {"status": "healthy", "module": "debt"}
+
 
