@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SpendWise SA - Take control of your financial future with intelligent money management, debt payoff strategies, and personalized insights.">
+    <title>SpendWise SA - Your Financial Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           DESIGN SYSTEM - SpendWise SA
+           ============================================ */
+        :root {
+            /* Primary Colors */
+            --color-primary-900: #002855;
+            --color-primary-700: #0052CC;
+            --color-primary-500: #0066CC;
+            
+            /* Secondary/Success Colors */
+            --color-success-700: #00875A;
+            --color-success-500: #00C853;
+            --color-success-300: #00E676;
+            
+            /* Accent Colors */
+            --color-accent-orange: #FF991F;
+            --color-accent-amber: #FFAB00;
+            
+            /* Neutrals */
+            --color-neutral-900: #091E42;
+            --color-neutral-800: #172B4D;
+            --color-neutral-700: #253858;
+            --color-neutral-600: #343A40;
+            --color-neutral-500: #505F79;
+            --color-neutral-400: #6B778C;
+            --color-neutral-300: #97A0AF;
+            --color-neutral-200: #DFE1E6;
+            --color-neutral-100: #F8F9FA;
+            --color-neutral-50: #FAFBFC;
+            
+            /* Semantic */
+            --color-error: #DE350B;
+            --color-warning: #FF991F;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #0066CC 0%, #00C853 100%);
+            --gradient-hero: linear-gradient(135deg, #002855 0%, #0052CC 50%, #00875A 100%);
+            --gradient-subtle: linear-gradient(180deg, #FAFBFC 0%, #F4F5F7 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(9, 30, 66, 0.12), 0 1px 2px rgba(9, 30, 66, 0.08);
+            --shadow-md: 0 4px 8px rgba(9, 30, 66, 0.15), 0 2px 4px rgba(9, 30, 66, 0.1);
+            --shadow-lg: 0 12px 24px rgba(9, 30, 66, 0.2), 0 6px 12px rgba(9, 30, 66, 0.15);
+            --shadow-xl: 0 20px 40px rgba(9, 30, 66, 0.25), 0 10px 20px rgba(9, 30, 66, 0.18);
+            
+            /* Typography */
+            --font-primary: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            /* Spacing */
+            --space-1: 8px;
+            --space-2: 16px;
+            --space-3: 24px;
+            --space-4: 32px;
+            --space-5: 40px;
+            --space-6: 48px;
+            --space-8: 64px;
+            --space-10: 80px;
+            --space-12: 96px;
+            
+            /* Border Radius */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --radius-2xl: 24px;
+            
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* ============================================
+           RESET & BASE
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: var(--font-primary);
+            color: var(--color-neutral-900);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background: var(--color-neutral-50);
+        }
+        
+        /* ============================================
+           NAVIGATION
+           ============================================ */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--color-neutral-200);
+            transition: all var(--transition-smooth);
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .navbar.scrolled {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+            text-decoration: none;
+            transition: transform var(--transition-base);
+        }
+        
+        .logo:hover {
+            transform: scale(1.05);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: var(--space-5);
+            list-style: none;
+        }
+        
+        .nav-link {
+            color: var(--color-neutral-700);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color var(--transition-base);
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            transition: width var(--transition-smooth);
+        }
+        
+        .nav-link:hover {
+            color: var(--color-primary-700);
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .nav-actions {
+            display: flex;
+            gap: var(--space-2);
+        }
+        
+        .btn {
+            padding: 12px 28px;
+            border-radius: var(--radius-lg);
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all var(--transition-smooth);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-primary-700);
+            border: 2px solid var(--color-primary-700);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--color-primary-700);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border: 2px solid transparent;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: var(--space-1);
+        }
+        
+        /* ============================================
+           HERO SECTION
+           ============================================ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: var(--gradient-hero);
+            position: relative;
+            overflow: hidden;
+            padding-top: 80px;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -25%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(0, 200, 83, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 102, 204, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+        
+        .hero-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-8);
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-content {
+            animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .badge-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--color-success-500);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hero-title {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1.1;
+            color: white;
+            margin-bottom: var(--space-3);
+            letter-spacing: -1.5px;
+        }
+        
+        .hero-title-gradient {
+            background: linear-gradient(135deg, #00E676 0%, #00C853 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-description {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: var(--space-5);
+            line-height: 1.7;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: var(--space-2);
+        }
+        
+        .btn-hero {
+            padding: 18px 40px;
+            font-size: 16px;
+        }
+        
+        .btn-hero-primary {
+            background: white;
+            color: var(--color-primary-700);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-hero-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .btn-hero-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-hero-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .hero-visual {
+            position: relative;
+            animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+        }
+        
+        .hero-mockup {
+            background: white;
+            border-radius: var(--radius-2xl);
+            padding: var(--space-3);
+            box-shadow: var(--shadow-xl);
+            transform: perspective(1000px) rotateY(-5deg);
+            transition: transform var(--transition-smooth);
+        }
+        
+        .hero-mockup:hover {
+            transform: perspective(1000px) rotateY(0deg);
+        }
+        
+        .mockup-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: var(--space-2);
+        }
+        
+        .mockup-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-neutral-300);
+        }
+        
+        .mockup-content {
+            background: var(--gradient-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+        }
+        
+        .mockup-stat {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            margin-bottom: var(--space-2);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .mockup-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--color-neutral-500);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .mockup-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--color-neutral-900);
+            font-family: var(--font-mono);
+        }
+        
+        .mockup-change {
+            font-size: 14px;
+            color: var(--color-success-700);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        
+        /* ============================================
+           TRUST INDICATORS
+           ============================================ */
+        .trust-section {
+            background: white;
+            padding: var(--space-6) 0;
+            border-bottom: 1px solid var(--color-neutral-200);
+        }
+        
+        .trust-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
+            text-align: center;
+        }
+        
+        .trust-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--color-neutral-500);
+            font-weight: 600;
+            margin-bottom: var(--space-4);
+        }
+        
+        .trust-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-6);
+        }
+        
+        .trust-stat {
+            animation: fadeIn 0.8s ease-out both;
+        }
+        
+        .trust-stat:nth-child(1) { animation-delay: 0.5s; }
+        .trust-stat:nth-child(2) { animation-delay: 0.6s; }
+        .trust-stat:nth-child(3) { animation-delay: 0.7s; }
+        .trust-stat:nth-child(4) { animation-delay: 0.8s; }
+        
+        .trust-value {
+            font-size: 48px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: var(--font-mono);
+            margin-bottom: var(--space-1);
+        }
+        
+        .trust-description {
+            font-size: 15px;
+            color: var(--color-neutral-600);
+            font-weight: 500;
+        }
+        
+        /* ============================================
+           FEATURES SECTION
+           ============================================ */
+        .features {
+            padding: var(--space-12) 0;
+            background: var(--gradient-subtle);
+        }
+        
+        .features-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: var(--space-10);
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .section-subtitle {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--color-primary-700);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+        }
+        
+        .section-title {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--color-neutral-900);
+            margin-bottom: var(--space-3);
+            letter-spacing: -1px;
+        }
+        
+        .section-description {
+            font-size: 20px;
+            color: var(--color-neutral-600);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-4);
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-smooth);
+            animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card:nth-child(4) { animation-delay: 0.4s; }
+        .feature-card:nth-child(5) { animation-delay: 0.5s; }
+        .feature-card:nth-child(6) { animation-delay: 0.6s; }
+        
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-3);
+            background: var(--icon-bg);
+            color: var(--icon-color);
+        }
+        
+        .feature-card:nth-child(1) .feature-icon {
+            --icon-bg: linear-gradient(135deg, rgba(0, 102, 204, 0.1), rgba(0, 200, 83, 0.1));
+            --icon-color: var(--color-primary-700);
+        }
+        
+        .feature-card:nth-child(2) .feature-icon {
+            --icon-bg: linear-gradient(135deg, rgba(0, 200, 83, 0.1), rgba(0, 230, 118, 0.1));
+            --icon-color: var(--color-success-500);
+        }
+        
+        .feature-card:nth-child(3) .feature-icon {
+            --icon-bg: linear-gradient(135deg, rgba(255, 153, 31, 0.1), rgba(255, 171, 0, 0.1));
+            --icon-color: var(--color-accent-orange);
+        }
+        
+        .feature-card:nth-child(4) .feature-icon {
+            --icon-bg: linear-gradient(135deg, rgba(0, 82, 204, 0.1), rgba(0, 102, 204, 0.1));
+            --icon-color: var(--color-primary-500);
+        }
+        
+        .feature-card:nth-child(5) .feature-icon {
+            --icon-bg: linear-gradient(135deg, rgba(0, 135, 90, 0.1), rgba(0, 200, 83, 0.1));
+            --icon-color: var(--color-success-700);
+        }
+        
+        .feature-card:nth-child(6) .feature-icon {
+            --icon-bg: linear-gradient(135deg, rgba(0, 40, 85, 0.1), rgba(0, 82, 204, 0.1));
+            --icon-color: var(--color-primary-900);
+        }
+        
+        .feature-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--color-neutral-900);
+            margin-bottom: var(--space-2);
+        }
+        
+        .feature-description {
+            font-size: 15px;
+            color: var(--color-neutral-600);
+            line-height: 1.7;
+        }
+        
+        /* ============================================
+           CTA SECTION
+           ============================================ */
+        .cta-section {
+            padding: var(--space-12) 0;
+            background: var(--gradient-hero);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -25%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 230, 118, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        
+        .cta-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cta-title {
+            font-size: 52px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: var(--space-3);
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+        
+        .cta-description {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: var(--space-5);
+            line-height: 1.7;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: var(--space-2);
+            justify-content: center;
+        }
+        
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            background: var(--color-neutral-900);
+            color: rgba(255, 255, 255, 0.7);
+            padding: var(--space-8) 0 var(--space-4);
+        }
+        
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: var(--space-8);
+            margin-bottom: var(--space-8);
+        }
+        
+        .footer-brand {
+            max-width: 350px;
+        }
+        
+        .footer-logo {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00E676 0%, #0066CC 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-2);
+        }
+        
+        .footer-description {
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: var(--space-3);
+        }
+        
+        .footer-social {
+            display: flex;
+            gap: var(--space-2);
+        }
+        
+        .social-link {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all var(--transition-base);
+        }
+        
+        .social-link:hover {
+            background: var(--color-success-500);
+            transform: translateY(-2px);
+        }
+        
+        .footer-section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: var(--space-3);
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-link {
+            margin-bottom: var(--space-2);
+        }
+        
+        .footer-link a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 15px;
+            transition: color var(--transition-base);
+        }
+        
+        .footer-link a:hover {
+            color: var(--color-success-500);
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: var(--space-4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .footer-legal {
+            display: flex;
+            gap: var(--space-4);
+        }
+        
+        .footer-legal a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color var(--transition-base);
+        }
+        
+        .footer-legal a:hover {
+            color: white;
+        }
+        
+        /* ============================================
+           ANIMATIONS
+           ============================================ */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(5deg);
+            }
+        }
+        
+        /* ============================================
+           RESPONSIVE DESIGN
+           ============================================ */
+        @media (max-width: 1024px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                gap: var(--space-6);
+            }
+            
+            .hero-visual {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .trust-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .hero-title {
+                font-size: 42px;
+            }
+            
+            .hero-description {
+                font-size: 18px;
+            }
+            
+            .hero-cta {
+                flex-direction: column;
+            }
+            
+            .section-title {
+                font-size: 36px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .trust-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-title {
+                font-size: 36px;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-bottom {
+                flex-direction: column;
+                gap: var(--space-3);
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 32px;
+            }
+            
+            .section-title {
+                font-size: 28px;
+            }
+            
+            .trust-value {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">SpendWise SA</a>
+            
+            <ul class="nav-links">
+                <li><a href="#features" class="nav-link">Features</a></li>
+                <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                <li><a href="#pricing" class="nav-link">Pricing</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-secondary">Sign In</a>
+                <a href="register.html" class="btn btn-primary">Get Started</a>
+            </div>
+            
+            <button class="mobile-menu-btn" aria-label="Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-icon">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </span>
+                    Trusted by 50,000+ South Africans
+                </div>
+                
+                <h1 class="hero-title">
+                    Take Control of Your <span class="hero-title-gradient">Financial Future</span>
+                </h1>
+                
+                <p class="hero-description">
+                    Smart money management made simple. Track income, crush debt with proven strategies, and watch your net worth grow with intelligent insights tailored for South Africans.
+                </p>
+                
+                <div class="hero-cta">
+                    <a href="register.html" class="btn btn-hero btn-hero-primary">
+                        Start Free Today
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="#features" class="btn btn-hero btn-hero-secondary">
+                        See How It Works
+                    </a>
+                </div>
+            </div>
+            
+            <div class="hero-visual">
+                <div class="hero-mockup">
+                    <div class="mockup-header">
+                        <div class="mockup-dot"></div>
+                        <div class="mockup-dot"></div>
+                        <div class="mockup-dot"></div>
+                    </div>
+                    <div class="mockup-content">
+                        <div class="mockup-stat">
+                            <div class="mockup-label">Financial Health Score</div>
+                            <div class="mockup-value">78/100</div>
+                            <div class="mockup-change">↗ Good Health</div>
+                        </div>
+                        <div class="mockup-stat">
+                            <div class="mockup-label">Net Worth</div>
+                            <div class="mockup-value">R 487K</div>
+                            <div class="mockup-change">↗ +R 12,450 this month</div>
+                        </div>
+                        <div class="mockup-stat">
+                            <div class="mockup-label">Debt Payoff Progress</div>
+                            <div class="mockup-value">42%</div>
+                            <div class="mockup-change">↗ 15 months remaining</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Trust Indicators -->
+    <section class="trust-section">
+        <div class="trust-container">
+            <div class="trust-label">Trusted Platform for South African Finances</div>
+            <div class="trust-stats">
+                <div class="trust-stat">
+                    <div class="trust-value">50K+</div>
+                    <div class="trust-description">Active Users</div>
+                </div>
+                <div class="trust-stat">
+                    <div class="trust-value">R2.4B</div>
+                    <div class="trust-description">Debt Being Tracked</div>
+                </div>
+                <div class="trust-stat">
+                    <div class="trust-value">4.9★</div>
+                    <div class="trust-description">User Rating</div>
+                </div>
+                <div class="trust-stat">
+                    <div class="trust-value">99.9%</div>
+                    <div class="trust-description">Uptime Guarantee</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <div class="section-header">
+                <div class="section-subtitle">Powerful Features</div>
+                <h2 class="section-title">Everything You Need to Win with Money</h2>
+                <p class="section-description">
+                    From income tracking to debt elimination, we provide the tools and insights you need to achieve your financial goals.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Income Tracking</h3>
+                    <p class="feature-description">
+                        Track multiple income sources, predict future earnings, and calculate tax obligations with precision.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                            <line x1="2" y1="10" x2="22" y2="10"></line>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Debt Elimination</h3>
+                    <p class="feature-description">
+                        Choose between snowball or avalanche strategies and watch your debt disappear with smart payment plans.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Net Worth Tracking</h3>
+                    <p class="feature-description">
+                        Monitor assets and liabilities in real-time. See your complete financial picture at a glance.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Goal Setting</h3>
+                    <p class="feature-description">
+                        Set financial goals with milestones and track progress automatically with intelligent projections.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Health Score</h3>
+                    <p class="feature-description">
+                        Get a clear 0-100 score of your financial health with breakdowns and actionable recommendations.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Bank-Level Security</h3>
+                    <p class="feature-description">
+                        Your data is encrypted with 256-bit SSL and stored securely with enterprise-grade protection.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-container">
+            <h2 class="cta-title">Ready to Transform Your Financial Life?</h2>
+            <p class="cta-description">
+                Join thousands of South Africans who have taken control of their money. Start your journey to financial freedom today — completely free.
+            </p>
+            <div class="cta-buttons">
+                <a href="register.html" class="btn btn-hero btn-hero-primary">
+                    Create Free Account
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="#features" class="btn btn-hero btn-hero-secondary">Learn More</a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">SpendWise SA</div>
+                    <p class="footer-description">
+                        Empowering South Africans to take control of their financial future with intelligent money management tools.
+                    </p>
+                    <div class="footer-social">
+                        <a href="#" class="social-link" aria-label="Twitter">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Facebook">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" aria-label="LinkedIn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path>
+                                <circle cx="4" cy="4" r="2"></circle>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="footer-section-title">Product</h4>
+                    <ul class="footer-links">
+                        <li class="footer-link"><a href="#features">Features</a></li>
+                        <li class="footer-link"><a href="#pricing">Pricing</a></li>
+                        <li class="footer-link"><a href="#security">Security</a></li>
+                        <li class="footer-link"><a href="#roadmap">Roadmap</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="footer-section-title">Company</h4>
+                    <ul class="footer-links">
+                        <li class="footer-link"><a href="#about">About Us</a></li>
+                        <li class="footer-link"><a href="#blog">Blog</a></li>
+                        <li class="footer-link"><a href="#careers">Careers</a></li>
+                        <li class="footer-link"><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="footer-section-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li class="footer-link"><a href="#help">Help Center</a></li>
+                        <li class="footer-link"><a href="#guides">Financial Guides</a></li>
+                        <li class="footer-link"><a href="#api">API Docs</a></li>
+                        <li class="footer-link"><a href="#status">System Status</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div>© 2026 SpendWise SA. All rights reserved.</div>
+                <div class="footer-legal">
+                    <a href="#privacy">Privacy Policy</a>
+                    <a href="#terms">Terms of Service</a>
+                    <a href="#cookies">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

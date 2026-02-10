@@ -44,23 +44,40 @@ def create_application() -> FastAPI:
     """Create and configure the FastAPI application."""
     app = FastAPI(
         title="SpendWise API - Personal Finance Management",
+        description="Comprehensive personal finance management API",
+        version="3.0.0",
         openapi_url="/api/v1/openapi.json",
         docs_url="/api/v1/docs",
-        redoc_url="/api/v1/redoc"
+        redoc_url="/api/v1/redoc",
+        lifespan=lifespan
     )
     
-    # Add GZip compression for response payloads (OPTIMIZATION)
+    # Add GZip compression for response payloads
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     
-    # Set up CORS
+    # Set up CORS with fallback
+    cors_origins = []
+    
     if hasattr(settings, 'BACKEND_CORS_ORIGINS') and settings.BACKEND_CORS_ORIGINS:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+        cors_origins = [str(origin) for origin in settings.BACKEND_CORS_ORIGINS]
+        logger.info(f"CORS origins configured: {cors_origins}")
+    else:
+        # Fallback to default origins
+        cors_origins = [
+            "http://localhost:3000",
+            "http://frontend:3000",
+            "http://localhost:8000",
+        ]
+        logger.warning(f"CORS origins not configured, using fallback: {cors_origins}")
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["Content-Disposition"]
+    )
     
     # Include all routers
     app.include_router(accounts.router, prefix="/api/v1/accounts", tags=["accounts"])
@@ -72,6 +89,23 @@ def create_application() -> FastAPI:
     app.include_router(transaction_payments.router, prefix="/api/v1", tags=["transaction-payments"])
     app.include_router(income.router, prefix="/api/v1", tags=["income"])
     app.include_router(debt.router, prefix="/api/v1", tags=["debts"])
+    
+    # Add health check endpoint
+    @app.get("/health")
+    async def health_check():
+        return {
+            "status": "healthy",
+            "service": "spendwise-api",
+            "version": "3.0.0"
+        }
+    
+    # Add CORS test endpoint
+    @app.get("/api/v1/test-cors")
+    async def test_cors():
+        return {
+            "message": "CORS is working correctly",
+            "allowed_origins": cors_origins
+        }
     
     return app
 

@@ -1,0 +1,617 @@
+﻿═══════════════════════════════════════════════════════════════════
+SPENDWISE SA - BACKEND CONTEXT EXPORT
+Generated: 2026-02-02 20:43:09
+═══════════════════════════════════════════════════════════════════
+
+This file contains the complete backend implementation reference.
+Use this with the backend documentation to understand the API structure.
+
+═══════════════════════════════════════════════════════════════════
+TABLE OF CONTENTS
+═══════════════════════════════════════════════════════════════════
+
+[1] API ENDPOINTS SUMMARY
+[2] DATABASE MODELS OVERVIEW
+[3] PYDANTIC SCHEMAS OVERVIEW
+[4] SERVICE LAYER OVERVIEW
+[5] AUTHENTICATION FLOW
+[6] AVAILABLE ENDPOINTS BY MODULE
+
+═══════════════════════════════════════════════════════════════════
+[1] API ENDPOINTS SUMMARY (From Backend Documentation)
+═══════════════════════════════════════════════════════════════════
+
+AUTHENTICATION:
+  POST   /api/v1/auth/register           - Register new user
+  POST   /api/v1/auth/login              - Login (returns JWT token)
+  GET    /api/v1/auth/me                 - Get current user info
+
+ACCOUNTS:
+  POST   /api/v1/accounts/               - Create account
+  GET    /api/v1/accounts/               - List accounts
+  GET    /api/v1/accounts/{id}           - Get account
+  PUT    /api/v1/accounts/{id}           - Update account
+  DELETE /api/v1/accounts/{id}           - Delete account
+
+CATEGORIES:
+  POST   /api/v1/categories/             - Create category
+  GET    /api/v1/categories/             - List categories
+  GET    /api/v1/categories/{id}         - Get category
+  PUT    /api/v1/categories/{id}         - Update category
+  DELETE /api/v1/categories/{id}         - Delete category
+
+BUDGETS:
+  POST   /api/v1/budgets/                - Create budget
+  GET    /api/v1/budgets/                - List budgets
+  GET    /api/v1/budgets/{id}            - Get budget
+  PUT    /api/v1/budgets/{id}            - Update budget
+  DELETE /api/v1/budgets/{id}            - Delete budget
+  GET    /api/v1/budgets/current/summary - Get budget summary
+
+TRANSACTIONS:
+  POST   /api/v1/transactions/           - Create transaction
+  GET    /api/v1/transactions/           - List transactions (with filters)
+  GET    /api/v1/transactions/summary    - Get transaction summary
+  GET    /api/v1/transactions/{id}       - Get transaction
+  PUT    /api/v1/transactions/{id}       - Update transaction
+  DELETE /api/v1/transactions/{id}       - Delete transaction
+
+PAYMENT METHODS:
+  POST   /api/v1/payment-methods/        - Create payment method
+  GET    /api/v1/payment-methods/        - List payment methods
+  GET    /api/v1/payment-methods/{id}    - Get payment method
+  PUT    /api/v1/payment-methods/{id}    - Update payment method
+  DELETE /api/v1/payment-methods/{id}    - Delete payment method
+
+INCOME TRACKING:
+  POST   /api/v1/income/sources          - Create income source
+  GET    /api/v1/income/sources          - List income sources
+  GET    /api/v1/income/sources/{id}     - Get income source
+  PUT    /api/v1/income/sources/{id}     - Update income source
+  DELETE /api/v1/income/sources/{id}     - Deactivate income source
+  
+  POST   /api/v1/income/history          - Record income
+  GET    /api/v1/income/history          - Get income history
+  
+  GET    /api/v1/income/summary/{y}/{m}  - Monthly summary
+  GET    /api/v1/income/predict/next-month - Predict next month
+  GET    /api/v1/income/stats            - Annual statistics
+  GET    /api/v1/income/health           - Health check
+
+DEBT MANAGEMENT:
+  POST   /api/v1/debts/accounts          - Create debt account
+  GET    /api/v1/debts/accounts          - List debt accounts
+  GET    /api/v1/debts/accounts/{id}     - Get debt account
+  PUT    /api/v1/debts/accounts/{id}     - Update debt account
+  DELETE /api/v1/debts/accounts/{id}     - Deactivate debt account
+  
+  POST   /api/v1/debts/payments          - Record payment
+  GET    /api/v1/debts/payments          - Get payment history
+  
+  GET    /api/v1/debts/summary           - Debt summary
+  GET    /api/v1/debts/stats             - Annual stats
+  GET    /api/v1/debts/payoff-strategy   - Calculate payoff strategy
+  GET    /api/v1/debts/health            - Health check
+
+NET WORTH:
+  POST   /api/v1/net-worth/assets        - Create asset
+  GET    /api/v1/net-worth/assets        - List assets
+  GET    /api/v1/net-worth/assets/{id}   - Get asset
+  PUT    /api/v1/net-worth/assets/{id}   - Update asset
+  
+  POST   /api/v1/net-worth/valuations    - Record valuation
+  GET    /api/v1/net-worth/dashboard     - Get dashboard
+  GET    /api/v1/net-worth/history       - Historical data
+  GET    /api/v1/net-worth/health        - Health check
+
+ANALYTICS & GOALS:
+  POST   /api/v1/analytics/goals         - Create goal
+  GET    /api/v1/analytics/goals         - List goals
+  GET    /api/v1/analytics/goals/{id}    - Get goal
+  
+  GET    /api/v1/analytics/health-score  - Financial health score
+  GET    /api/v1/analytics/check-health  - Health check
+
+═══════════════════════════════════════════════════════════════════
+[2] DATABASE MODELS OVERVIEW
+═══════════════════════════════════════════════════════════════════
+
+User Model:
+  - id (UUID)
+  - email (unique)
+  - hashed_password
+  - full_name
+  - is_active
+  - is_admin
+  - email_verified
+  - created_at
+  - updated_at
+
+Account Model:
+  - id (UUID)
+  - user_id (FK)
+  - name
+  - account_type (ENUM: CHECKING, SAVINGS, CREDIT_CARD, INVESTMENT, LOAN)
+  - balance (Decimal)
+  - currency (default: USD)
+  - is_active (Boolean)
+  - created_at, updated_at
+
+Category Model:
+  - id (UUID)
+  - user_id (FK)
+  - name
+  - category_type (ENUM: INCOME, EXPENSE, TRANSFER)
+  - description, icon, color
+  - parent_id (self-referential FK)
+  - is_system, is_active
+  - display_order
+  - created_at, updated_at
+
+Budget Model:
+  - id (UUID)
+  - user_id (FK)
+  - category_id (FK)
+  - name, amount, currency
+  - period (ENUM: MONTHLY, QUARTERLY, YEARLY, WEEKLY)
+  - start_date, end_date
+  - notifications_enabled, notification_threshold
+  - is_active
+  - created_at, updated_at
+
+Transaction Model:
+  - id (UUID)
+  - user_id, account_id, category_id (FKs)
+  - amount, currency
+  - transaction_date
+  - description, notes
+  - is_transfer, is_recurring, recurrence_rule
+  - created_at, updated_at
+
+PaymentMethod Model:
+  - id (UUID)
+  - user_id (FK)
+  - name
+  - payment_type (ENUM: CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, CASH, DIGITAL_WALLET, OTHER)
+  - last_four
+  - is_active, is_default
+  - created_at, updated_at
+
+IncomeSource Model:
+  - id (UUID)
+  - user_id (FK)
+  - name
+  - type (ENUM: SALARY, FREELANCE, INVESTMENT, PASSIVE, CUSTOM, OTHER)
+  - frequency (ENUM: DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY)
+  - amount, currency
+  - start_date, end_date
+  - is_recurring, is_taxable
+  - tax_category, auto_tax_calculation, tax_rate
+  - is_active
+  - created_at, updated_at
+
+IncomeHistory Model:
+  - id (UUID)
+  - user_id, income_source_id (FKs)
+  - amount, currency
+  - received_date
+  - tax_amount, net_amount
+  - notes, is_manual_entry
+  - created_at, updated_at
+
+DebtAccount Model:
+  - id (UUID)
+  - user_id (FK)
+  - name
+  - type (ENUM: CREDIT_CARD, PERSONAL_LOAN, AUTO_LOAN, MORTGAGE, STUDENT_LOAN, OTHER)
+  - creditor_name
+  - current_balance, credit_limit
+  - interest_rate, minimum_payment
+  - due_date, start_date, payoff_date
+  - is_active, notes
+  - created_at, updated_at
+
+DebtPayment Model:
+  - id (UUID)
+  - user_id, debt_account_id (FKs)
+  - amount
+  - payment_date
+  - payment_method (ENUM: BANK_TRANSFER, CHECK, CREDIT_CARD, AUTO_PAY, OTHER)
+  - notes
+  - created_at, updated_at
+
+Asset Model:
+  - id (UUID)
+  - user_id (FK)
+  - name
+  - type (ENUM: CASH, SAVINGS_ACCOUNT, CHECKING_ACCOUNT, INVESTMENT_ACCOUNT, 
+          RETIREMENT_ACCOUNT, REAL_ESTATE, VEHICLE, CRYPTOCURRENCY, 
+          PRECIOUS_METALS, COLLECTIBLES, BUSINESS, OTHER)
+  - current_value, purchase_price, purchase_date
+  - last_valued_date
+  - is_liquid, is_active
+  - created_at, updated_at
+
+Goal Model:
+  - id (UUID)
+  - user_id (FK)
+  - name
+  - type (ENUM: DEBT_PAYOFF, SAVINGS, INVESTMENT, RETIREMENT, HOME_PURCHASE,
+          EDUCATION, EMERGENCY_FUND, VACATION, VEHICLE, OTHER)
+  - target_amount, current_amount
+  - target_date, start_date
+  - status, priority
+  - progress_percentage
+  - is_active
+  - created_at, updated_at
+
+═══════════════════════════════════════════════════════════════════
+[3] PYDANTIC SCHEMAS OVERVIEW
+═══════════════════════════════════════════════════════════════════
+
+All schemas follow this pattern:
+  - XxxCreate: For POST requests (input validation)
+  - XxxUpdate: For PUT/PATCH requests (partial updates)
+  - XxxInDB / XxxOut: For responses (includes all fields + timestamps)
+
+Key Configuration for Response Schemas:
+  class Config:
+      orm_mode = True              # Allow ORM object loading
+      use_enum_values = True       # Serialize enums as strings
+      extra = 'forbid'             # Reject unknown fields
+
+═══════════════════════════════════════════════════════════════════
+[4] AUTHENTICATION & AUTHORIZATION
+═══════════════════════════════════════════════════════════════════
+
+JWT Token Flow:
+1. User registers → POST /api/v1/auth/register
+2. User logs in → POST /api/v1/auth/login → receives JWT token
+3. Frontend stores token in localStorage
+4. All subsequent requests include: Authorization: Bearer <token>
+5. Backend validates token using get_current_user dependency
+
+Token Details:
+  - Algorithm: HS256
+  - Expiry: 30 minutes (configurable)
+  - Payload: { sub: user_id, exp: timestamp }
+  - Secret: Stored in environment variable
+
+Protected Endpoints:
+  - ALL endpoints except /auth/register and /auth/login require authentication
+  - Token must be valid and not expired
+  - User must be active (is_active = True)
+
+═══════════════════════════════════════════════════════════════════
+[5] BACKEND TECHNOLOGY STACK
+═══════════════════════════════════════════════════════════════════
+
+Framework: FastAPI 0.104.1
+  - Async/await support
+  - Automatic OpenAPI docs
+  - Request validation
+  - Type hints
+
+Database: PostgreSQL
+  - ORM: SQLAlchemy 2.0.23 (async)
+  - Driver: asyncpg
+  - Migrations: Alembic
+
+Caching: Redis
+  - Session management
+  - Performance optimization
+  - Cache invalidation
+
+Security:
+  - Password hashing: bcrypt
+  - JWT tokens: python-jose
+  - CORS: Configurable origins
+  - SQL injection: Protected via ORM
+
+═══════════════════════════════════════════════════════════════════
+[6] REQUEST/RESPONSE EXAMPLES
+═══════════════════════════════════════════════════════════════════
+
+REGISTRATION:
+POST /api/v1/auth/register
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "full_name": "John Doe"
+}
+→ Response 201: { id, email, full_name, is_active, created_at }
+
+LOGIN:
+POST /api/v1/auth/login
+Form Data: username=user@example.com&password=SecurePass123!
+→ Response 200: { access_token: "eyJ...", token_type: "bearer" }
+
+CREATE ACCOUNT:
+POST /api/v1/accounts/
+Headers: Authorization: Bearer eyJ...
+{
+  "name": "My Checking",
+  "account_type": "CHECKING",
+  "currency": "USD"
+}
+→ Response 201: { id, user_id, name, account_type, balance: 0.00, ... }
+
+CREATE INCOME SOURCE:
+POST /api/v1/income/sources
+{
+  "name": "Primary Salary",
+  "type": "SALARY",
+  "frequency": "MONTHLY",
+  "amount": "5000.00",
+  "is_recurring": true,
+  "is_taxable": true
+}
+→ Response 201: { id, user_id, name, type, amount, is_active, ... }
+
+GET MONTHLY INCOME SUMMARY:
+GET /api/v1/income/summary/2026/1
+→ Response 200: {
+  "year": 2026,
+  "month": 1,
+  "total_income": "10000.00",
+  "total_tax": "2000.00",
+  "net_income": "8000.00",
+  "recurring_income": "10000.00",
+  "one_time_income": "0.00"
+}
+
+CREATE DEBT ACCOUNT:
+POST /api/v1/debts/accounts
+{
+  "name": "Chase Credit Card",
+  "type": "CREDIT_CARD",
+  "current_balance": "5000.00",
+  "interest_rate": "19.99",
+  "credit_limit": "10000.00",
+  "start_date": "2026-01-01"
+}
+→ Response 201: { id, user_id, name, current_balance, ... }
+
+GET DEBT PAYOFF STRATEGY:
+GET /api/v1/debts/payoff-strategy?strategy_type=SNOWBALL
+→ Response 200: {
+  "strategy_type": "SNOWBALL",
+  "accounts_in_order": [...],
+  "estimated_total_months": 24,
+  "monthly_payment_required": "300.00"
+}
+
+═══════════════════════════════════════════════════════════════════
+[7] BACKEND CURRENT STATUS
+═══════════════════════════════════════════════════════════════════
+
+✅ FULLY IMPLEMENTED:
+  - User authentication (register, login, JWT)  - Account management (CRUD)
+  - Category management (CRUD)
+  - Budget management (CRUD)
+  - Transaction management (CRUD with filters)
+  - Payment methods (CRUD)
+  - Income tracking (sources, history, analytics)
+  - Debt management (accounts, payments, analytics)
+  - Net worth tracking (assets, valuations)
+  - Goals and milestones
+  - Financial health scoring
+
+🔧 PARTIALLY IMPLEMENTED:
+  - Analytics insights generation
+  - Forecasting algorithms
+  - Email notifications
+
+❌ NOT YET IMPLEMENTED:
+  - Email verification
+  - Password reset
+  - Two-factor authentication
+  - Social login
+  - WebSocket notifications
+  - Export to PDF/Excel
+
+═══════════════════════════════════════════════════════════════════
+[8] FRONTEND INTEGRATION CHECKLIST
+═══════════════════════════════════════════════════════════════════
+
+For each backend endpoint, the frontend needs:
+
+1. TypeScript type definitions (from Pydantic schemas)
+2. API client function (axios wrapper)
+3. React hook for state management
+4. UI component for display
+5. Form component for input (if applicable)
+
+Example for Income Module:
+  ✅ Backend: /api/v1/income/sources (GET, POST, PUT, DELETE)
+  → Frontend needs:
+     - types/income.ts (IncomeSource, IncomeSourceCreate, etc.)
+     - api/income.ts (fetchIncomeSources, createIncomeSource, etc.)
+     - hooks/useIncome.ts (useIncomeSources, useCreateIncome, etc.)
+     - components/income/IncomeSourceCard.tsx
+     - components/income/IncomeSourceForm.tsx
+
+═══════════════════════════════════════════════════════════════════
+[9] COMMON API PATTERNS
+═══════════════════════════════════════════════════════════════════
+
+All endpoints follow these patterns:
+
+PAGINATION:
+  GET /api/v1/resource?skip=0&limit=100
+
+FILTERING:
+  GET /api/v1/transactions?start_date=2026-01-01&end_date=2026-01-31
+  GET /api/v1/debts/accounts?active_only=true
+
+SORTING:
+  Results typically sorted by created_at DESC (newest first)
+
+ERROR RESPONSES:
+  400 Bad Request: { detail: "Error message" }
+  401 Unauthorized: { detail: "Not authenticated" }
+  404 Not Found: { detail: "Resource not found" }
+  422 Validation Error: { detail: [{loc, msg, type}, ...] }
+  500 Server Error: { detail: "Internal server error" }
+
+SUCCESS RESPONSES:
+  200 OK: Resource(s) returned
+  201 Created: Resource created
+  204 No Content: Resource deleted
+
+═══════════════════════════════════════════════════════════════════
+[10] DATABASE SCHEMA RELATIONSHIPS
+═══════════════════════════════════════════════════════════════════
+
+User (1) ──→ (Many) Accounts
+User (1) ──→ (Many) Categories
+User (1) ──→ (Many) Budgets
+User (1) ──→ (Many) Transactions
+User (1) ──→ (Many) PaymentMethods
+User (1) ──→ (Many) IncomeSources
+User (1) ──→ (Many) IncomeHistory
+User (1) ──→ (Many) DebtAccounts
+User (1) ──→ (Many) DebtPayments
+User (1) ──→ (Many) Assets
+User (1) ──→ (Many) Goals
+
+Account (1) ──→ (Many) Transactions
+Category (1) ──→ (Many) Transactions
+Category (1) ──→ (Many) Budgets
+Category (1) ──→ (Many) Categories (self-referential, parent_id)
+PaymentMethod (1) ──→ (Many) TransactionPayments
+Transaction (1) ──→ (Many) TransactionPayments
+IncomeSource (1) ──→ (Many) IncomeHistory
+DebtAccount (1) ──→ (Many) DebtPayments
+Asset (1) ──→ (Many) AssetValuations
+Goal (1) ──→ (Many) Milestones
+
+═══════════════════════════════════════════════════════════════════
+[11] RECOMMENDED FRONTEND STRUCTURE
+═══════════════════════════════════════════════════════════════════
+
+frontend/src/
+├── app/                          # Next.js App Router
+│   ├── (auth)/
+│   │   ├── login/page.tsx       ✅ DONE
+│   │   └── register/page.tsx    ✅ DONE
+│   ├── dashboard/
+│   │   ├── page.tsx             ✅ DONE (basic)
+│   │   ├── accounts/
+│   │   │   ├── page.tsx         📝 TODO
+│   │   │   └── [id]/page.tsx    📝 TODO
+│   │   ├── income/
+│   │   │   ├── page.tsx         📝 TODO (Income Dashboard)
+│   │   │   ├── sources/         📝 TODO (Manage Sources)
+│   │   │   └── history/         📝 TODO (Income History)
+│   │   ├── debt/
+│   │   │   ├── page.tsx         📝 TODO (Debt Dashboard)
+│   │   │   ├── accounts/        📝 TODO (Manage Debts)
+│   │   │   └── strategy/        📝 TODO (Payoff Calculator)
+│   │   ├── net-worth/
+│   │   │   ├── page.tsx         📝 TODO (Net Worth Dashboard)
+│   │   │   └── assets/          📝 TODO (Asset Management)
+│   │   ├── goals/
+│   │   │   └── page.tsx         📝 TODO (Goals & Milestones)
+│   │   └── analytics/
+│   │       └── page.tsx         📝 TODO (Financial Health)
+│   └── layout.tsx               ✅ DONE
+├── components/
+│   ├── ui/                      # shadcn/ui components
+│   ├── income/
+│   │   ├── IncomeSourceCard.tsx     📝 TODO
+│   │   ├── IncomeSourceForm.tsx     📝 TODO
+│   │   ├── IncomeHistoryTable.tsx   📝 TODO
+│   │   └── IncomeSummaryWidget.tsx  📝 TODO
+│   ├── debt/
+│   │   ├── DebtAccountCard.tsx      📝 TODO
+│   │   ├── DebtPaymentForm.tsx      📝 TODO
+│   │   ├── PayoffStrategyCalc.tsx   📝 TODO
+│   │   └── DebtProgressChart.tsx    📝 TODO
+│   ├── net-worth/
+│   │   ├── AssetCard.tsx            📝 TODO
+│   │   ├── NetWorthChart.tsx        📝 TODO
+│   │   └── AssetAllocation.tsx      📝 TODO
+│   └── analytics/
+│       ├── HealthScoreCard.tsx      📝 TODO
+│       ├── GoalProgressCard.tsx     📝 TODO
+│       └── InsightsWidget.tsx       📝 TODO
+├── lib/
+│   ├── api.ts                   ✅ DONE (Axios client)
+│   └── api/
+│       ├── auth.ts              ✅ DONE
+│       ├── accounts.ts          📝 TODO
+│       ├── income.ts            📝 TODO
+│       ├── debt.ts              📝 TODO
+│       ├── netWorth.ts          📝 TODO
+│       └── analytics.ts         📝 TODO
+├── hooks/
+│   ├── useAuth.ts               ✅ DONE (via AuthContext)
+│   ├── useIncome.ts             📝 TODO
+│   ├── useDebt.ts               📝 TODO
+│   ├── useNetWorth.ts           📝 TODO
+│   └── useAnalytics.ts          📝 TODO
+├── types/
+│   ├── auth.ts                  ✅ DONE
+│   ├── income.ts                📝 TODO
+│   ├── debt.ts                  📝 TODO
+│   ├── netWorth.ts              📝 TODO
+│   └── analytics.ts             📝 TODO
+└── contexts/
+    └── AuthContext.tsx          ✅ DONE
+
+═══════════════════════════════════════════════════════════════════
+[12] NEXT IMMEDIATE STEPS FOR FRONTEND
+═══════════════════════════════════════════════════════════════════
+
+PRIORITY 1 - Income Module (Easiest to build, most valuable):
+1. Create TypeScript types from backend schemas:
+   - IncomeSource, IncomeHistory, IncomeMonthlySummary, IncomeStats
+
+2. Create API client functions:
+   - fetchIncomeSources(), createIncomeSource(), updateIncomeSource()
+   - fetchIncomeHistory(), recordIncome()
+   - fetchMonthlySummary(), fetchIncomeStats()
+
+3. Create React hooks:
+   - useIncomeSources() - List income sources
+   - useCreateIncome() - Create/update income
+   - useMonthlySummary() - Get monthly data
+   - useIncomeStats() - Get annual stats
+
+4. Create UI components:
+   - IncomeSourceCard - Display income source
+   - IncomeSourceForm - Add/edit income source
+   - IncomeHistoryTable - Show income history
+   - IncomeSummaryWidget - Monthly summary display
+   - IncomeCharts - Visualize income trends
+
+5. Create pages:
+   - /dashboard/income - Income overview
+   - /dashboard/income/sources - Manage sources
+   - /dashboard/income/history - View history
+
+PRIORITY 2 - Debt Module:
+Same pattern as income module
+
+PRIORITY 3 - Net Worth Module:
+Same pattern as income module
+
+PRIORITY 4 - Analytics Module:
+Build after core modules are complete
+
+═══════════════════════════════════════════════════════════════════
+END OF BACKEND CONTEXT
+═══════════════════════════════════════════════════════════════════
+
+Backend URL: http://localhost:8000
+API Docs: http://localhost:8000/api/v1/docs
+ReDoc: http://localhost:8000/api/v1/redoc
+
+All endpoints require:
+  Authorization: Bearer <jwt_token>
+
+Except:
+  POST /api/v1/auth/register
+  POST /api/v1/auth/login
+
