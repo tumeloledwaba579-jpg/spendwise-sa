@@ -13,23 +13,22 @@ class Transaction(Base):
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     
     amount = Column(Numeric(12, 2), nullable=False)
-    currency = Column(String(3), default="USD", nullable=False)
+    currency = Column(String(3), default="ZAR", nullable=False)  # Changed to ZAR for South Africa
     transaction_date = Column(DateTime(timezone=True), nullable=False)
     description = Column(String(255), nullable=False)
     notes = Column(Text, nullable=True)
     is_transfer = Column(Boolean, default=False)
     is_recurring = Column(Boolean, default=False)
-    recurrence_rule = Column(String, nullable=True)  # For recurring transactions (e.g., "MONTHLY")
+    recurrence_rule = Column(String, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    user = relationship("User")
+    user = relationship("User", back_populates="transactions")
     account = relationship("Account", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
     transaction_payments = relationship("TransactionPayment", back_populates="transaction", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Transaction(id={self.id}, amount={self.amount}, date={self.transaction_date})>"
-

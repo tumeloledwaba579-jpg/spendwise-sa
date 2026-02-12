@@ -30,6 +30,7 @@ class User(Base):
     # =========================================================================
     accounts = relationship("Account", back_populates="owner", cascade="all, delete-orphan")
     budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan")
+    transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")  # ✅ FIXED
 
     # =========================================================================
     # Phase 2: Income Tracking Relationships
@@ -44,6 +45,13 @@ class User(Base):
     debt_accounts = relationship("DebtAccount", back_populates="user", cascade="all, delete-orphan")
     debt_payments = relationship("DebtPayment", back_populates="user", cascade="all, delete-orphan")
     debt_snapshots = relationship("DebtSnapshot", back_populates="user", cascade="all, delete-orphan")
+
+    # =========================================================================
+    # Phase 2c: Net Worth Relationships
+    # =========================================================================
+    # Add these if you have net worth models
+    # assets = relationship("Asset", back_populates="user", cascade="all, delete-orphan")
+    # liabilities = relationship("Liability", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"

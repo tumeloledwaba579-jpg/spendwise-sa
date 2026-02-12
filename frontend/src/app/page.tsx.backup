@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import './globals.css';
 
-// Data arrays
+// Data - MUST be defined BEFORE they are used in JSX
 const features = [
   {
     icon: '📊',
