@@ -1,4 +1,4 @@
-﻿"""
+"""
 Comprehensive tests for income tracking service.
 """
 import pytest

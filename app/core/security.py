@@ -1,4 +1,4 @@
-﻿"""
+"""
 Security utilities for password hashing and JWT token handling.
 """
 from datetime import datetime, timedelta

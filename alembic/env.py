@@ -1,4 +1,5 @@
 ﻿import asyncio
+import os
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -9,13 +10,24 @@ from pathlib import Path
 # Add the app directory to the path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.core.database import engine
+# REMOVE THIS LINE - it's causing the circular import
+# from app.core.database import engine  # DELETE THIS
+
 from app.models.base import Base
 from app.models import *
 
 # this is the Alembic Config object
 config = context.config
-config.set_main_option("sqlalchemy.url", "postgresql+asyncpg://postgres:root123@postgres:5432/spendwise_db")
+
+# Get DATABASE_URL from environment or use default
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:root123@postgres:5432/spendwise_db")
+
+# Clean the URL in case it has "DATABASE_URL=" prefix
+if DATABASE_URL.startswith("DATABASE_URL="):
+    DATABASE_URL = DATABASE_URL.replace("DATABASE_URL=", "", 1)
+
+# Set the clean URL in config
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 target_metadata = Base.metadata
 
@@ -56,4 +68,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

@@ -1,4 +1,4 @@
-﻿"""
+"""
 User Pydantic schemas for profile updates (not authentication).
 Note: Authentication schemas are in auth.py.
 """

@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from sqlalchemy import Column, String, Numeric, DateTime, ForeignKey, func, Enum, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship

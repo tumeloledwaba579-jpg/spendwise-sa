@@ -1,4 +1,4 @@
-﻿"""
+"""
 Pytest configuration for app tests.
 Fixes Python path issues.
 """

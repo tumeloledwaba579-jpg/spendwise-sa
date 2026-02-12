@@ -1,4 +1,4 @@
-﻿"""
+"""
 Asset management models for net worth tracking.
 """
 from sqlalchemy import Column, String, Numeric, Date, Integer, Boolean, Text, DateTime, ForeignKey

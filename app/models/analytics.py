@@ -1,4 +1,4 @@
-﻿"""Financial analytics models."""
+"""Financial analytics models."""
 from sqlalchemy import Column, String, Numeric, Date, Integer, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship

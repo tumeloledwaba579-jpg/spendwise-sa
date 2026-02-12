@@ -1,4 +1,4 @@
-﻿"""
+"""
 SQLAlchemy models for income tracking module.
 """
 import uuid

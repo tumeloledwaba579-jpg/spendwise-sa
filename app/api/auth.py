@@ -1,4 +1,4 @@
-﻿"""
+"""
 Authentication endpoints for the SpendWise SA API.
 """
 

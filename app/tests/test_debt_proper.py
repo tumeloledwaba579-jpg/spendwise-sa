@@ -1,4 +1,4 @@
-﻿"""
+"""
 Proper pytest test file for debt module.
 """
 import pytest
@@ -24,7 +24,7 @@ def test_debt_endpoints_exist():
         
         # Typically returns 401 (unauthorized) which means it exists
         if response.status_code == 401:
-            print(f"✅ {endpoint} exists (401 Unauthorized)")
+            print(f"? {endpoint} exists (401 Unauthorized)")
         
     pass
 
@@ -49,10 +49,10 @@ def test_debt_schema_validation():
         schema = DebtAccountCreate(**valid_data)
         assert schema.name == "Test Credit Card"
         assert schema.type == "CREDIT_CARD"
-        print("✅ Debt schema validation works")
+        print("? Debt schema validation works")
         pass
     except Exception as e:
-        print(f"❌ Debt schema validation failed: {e}")
+        print(f"? Debt schema validation failed: {e}")
         return False
 
 
@@ -67,7 +67,7 @@ async def test_debt_service_instantiation():
     
     assert service is not None
     assert service.session == mock_session
-    print("✅ DebtService instantiation works")
+    print("? DebtService instantiation works")
     pass
 
 

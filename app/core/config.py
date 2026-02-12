@@ -1,27 +1,44 @@
-﻿from pydantic import BaseSettings
+from pydantic import BaseSettings
+from typing import List, Optional
 
 class Settings(BaseSettings):
-    # Database configuration
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "root123"
-    POSTGRES_DB: str = "spendwise_db"
-    POSTGRES_SERVER: str = "postgres"
-    POSTGRES_PORT: str = "5432"
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:root123@127.0.0.1:5432/spendwise_db"
+    # Database
+    DATABASE_URL: str
     
-    # Add this line - Test database URL
-    TEST_DATABASE_URL: str = "postgresql+asyncpg://postgres:root123@127.0.0.1:5433/spendwise_db_test"
+    # Redis
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
     
-    # JWT configuration (for authentication)
-    SECRET_KEY: str = "your-secret-key-change-in-production-32-characters-minimum"
+    # CORS
+    BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://frontend:3000"
+    
+    # JWT
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Email (Optional)
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: Optional[int] = None
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    EMAILS_FROM_EMAIL: Optional[str] = None
+    
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
+        # In Pydantic v1, we can use:
+        # - extra = "forbid" (strict)
+        # - extra = "ignore" (ignore extra fields)
+        # - extra = "allow" (allow extra fields)
+        extra = "ignore"  # Keep this
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Convert CORS origins string to list"""
+        if isinstance(self.BACKEND_CORS_ORIGINS, str):
+            return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",")]
+        return self.BACKEND_CORS_ORIGINS
 
 settings = Settings()
-
-
-
-

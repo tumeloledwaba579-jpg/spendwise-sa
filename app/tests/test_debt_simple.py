@@ -1,4 +1,4 @@
-﻿"""
+"""
 Simple tests for debt module that don't require imports.
 """
 import pytest

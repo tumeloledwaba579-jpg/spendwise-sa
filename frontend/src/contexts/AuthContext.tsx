@@ -1,21 +1,21 @@
 ﻿'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
   id: string;
   email: string;
   full_name: string;
+  phone?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<any>;
-  register: (data: any) => Promise<any>;
+  login: (token: string, user: User) => void;
   logout: () => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,97 +24,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const isBrowser = typeof window !== 'undefined';
 
   useEffect(() => {
-    if (!isBrowser) {
-      setIsLoading(false);
-      return;
-    }
-    
-    const storedToken = localStorage.getItem('auth_token');
-    const storedUser = localStorage.getItem('auth_user');
-    
+    // Check for stored auth on mount
+    const storedToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        logout();
+      }
     }
-    
     setIsLoading(false);
-  }, [isBrowser]);
+  }, []);
 
-  const login = async (email: string, password: string) => {
-    // TODO: Replace with actual API call
-    const mockUser = { id: '1', email, full_name: 'John Doe' };
-    const mockToken = 'mock-jwt-token';
-    
-    if (isBrowser) {
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
-    }
-    
-    setToken(mockToken);
-    setUser(mockUser);
-    
-    return { success: true, data: { access_token: mockToken, user: mockUser } };
-  };
-
-  const register = async (data: any) => {
-    // TODO: Replace with actual API call
-    const mockUser = { 
-      id: '1', 
-      email: data.email, 
-      full_name: data.full_name || 'New User' 
-    };
-    const mockToken = 'mock-jwt-token';
-    
-    if (isBrowser) {
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
-    }
-    
-    setToken(mockToken);
-    setUser(mockUser);
-    
-    return { success: true, data: { access_token: mockToken, user: mockUser } };
+  const login = (newToken: string, newUser: User) => {
+    setToken(newToken);
+    setUser(newUser);
+    localStorage.setItem('auth_token', newToken);
+    localStorage.setItem('auth_user', JSON.stringify(newUser));
   };
 
   const logout = () => {
-    if (isBrowser) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-    }
-    
     setToken(null);
     setUser(null);
-    
-    if (isBrowser) {
-      window.location.href = '/login';
-    }
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    sessionStorage.removeItem('auth_token');
+    sessionStorage.removeItem('auth_user');
   };
 
-  const isAuthenticated = !!token && !!user;
-
   return (
-    <AuthContext.Provider value={{
-      user,
-      token,
-      isLoading,
-      isAuthenticated,
-      login,
-      register,
-      logout
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        isAuthenticated: !!token,
+        isLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}

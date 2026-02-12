@@ -1,4 +1,4 @@
-﻿"""
+"""
 Startup validation checks to prevent schema/model misalignment.
 This catches the silent failure patterns before they reach production.
 """

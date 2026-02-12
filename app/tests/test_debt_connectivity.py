@@ -1,4 +1,4 @@
-﻿"""
+"""
 Connectivity test for debt module.
 Tests that endpoints are reachable and return proper responses.
 """
@@ -28,7 +28,7 @@ async def test_debt_endpoints_exist():
     
     print(f"Found {len(debt_endpoints)} debt endpoints:")
     for endpoint in debt_endpoints:
-        print(f"   ✓ {endpoint}")
+        print(f"   ? {endpoint}")
     
     # Verify we have the expected endpoints
     expected_endpoints = [
@@ -76,7 +76,7 @@ async def test_debt_schema_validation():
     payment = DebtPaymentCreate(**payment_data)
     assert payment.amount == Decimal("100.00")
     
-    print("✅ All schema validation tests passed")
+    print("? All schema validation tests passed")
 
 
 @pytest.mark.asyncio
@@ -94,13 +94,13 @@ async def test_debt_service_instantiation():
     assert service is not None
     assert service.session == mock_session
     
-    print("✅ Debt service instantiation test passed")
+    print("? Debt service instantiation test passed")
 
 
 def test_always_passes():
     """A simple test that always passes."""
     assert 1 + 1 == 2
-    print("✅ Simple arithmetic test passed")
+    print("? Simple arithmetic test passed")
 
 
 if __name__ == "__main__":
@@ -115,4 +115,4 @@ if __name__ == "__main__":
     test_always_passes()
     
     print("\n" + "="*50)
-    print("✅ All connectivity tests completed successfully!")
+    print("? All connectivity tests completed successfully!")

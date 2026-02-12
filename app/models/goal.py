@@ -1,4 +1,4 @@
-﻿"""Goal and milestone models."""
+"""Goal and milestone models."""
 from sqlalchemy import Column, String, Numeric, Date, Integer, Boolean, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship

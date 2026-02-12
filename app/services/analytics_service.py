@@ -1,4 +1,4 @@
-﻿"""Analytics service."""
+"""Analytics service."""
 import logging
 from decimal import Decimal
 from datetime import datetime, date

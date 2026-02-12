@@ -1,4 +1,4 @@
-﻿from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -90,13 +90,28 @@ def create_application() -> FastAPI:
     app.include_router(income.router, prefix="/api/v1", tags=["income"])
     app.include_router(debt.router, prefix="/api/v1", tags=["debts"])
     
-    # Add health check endpoint
+       # Add health check endpoint
     @app.get("/health")
     async def health_check():
         return {
             "status": "healthy",
             "service": "spendwise-api",
             "version": "3.0.0"
+        }
+    
+    # Add API v1 health endpoint (for frontend)
+    @app.get("/api/v1/health")
+    async def api_v1_health():
+        return {
+            "status": "healthy",
+            "service": "spendwise-api",
+            "version": "3.0.0",
+            "api_version": "v1",
+            "endpoints": {
+                "auth": "/api/v1/auth",
+                "health": "/api/v1/health",
+                "docs": "/api/v1/docs"
+            }
         }
     
     # Add CORS test endpoint

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Authentication schemas for the SpendWise SA API.
 """
 import uuid
@@ -14,6 +14,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=100)
     full_name: str = Field(..., min_length=2, max_length=100)
+    phone: Optional[str] = Field(None, min_length=10, max_length=20)
     @validator('password')
     def password_strength(cls, v):
         """Validate password strength."""
@@ -38,6 +39,7 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str
     created_at: datetime
+    phone: Optional[str] = None
     @validator('id', pre=True)
     def convert_uuid_to_str(cls, v):
         """Convert UUID object to string."""
@@ -55,7 +57,8 @@ class Token(BaseModel):
     """Schema for JWT token response."""
     access_token: str
     token_type: str = "bearer"
-    
+    user: dict 
+
     class Config:
         orm_mode = True
         use_enum_values = True

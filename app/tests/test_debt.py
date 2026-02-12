@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for debt management module.
 """
 import pytest

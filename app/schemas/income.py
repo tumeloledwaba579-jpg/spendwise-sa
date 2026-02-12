@@ -1,4 +1,4 @@
-﻿"""
+"""
 Pydantic schemas for income tracking module.
 """
 from datetime import date, datetime

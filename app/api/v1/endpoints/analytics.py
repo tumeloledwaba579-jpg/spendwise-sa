@@ -1,4 +1,4 @@
-﻿"""Analytics endpoints."""
+"""Analytics endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from uuid import UUID

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Transaction Pydantic schemas for the SpendWise SA API.
 """
 from datetime import datetime

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Comprehensive integration tests for debt management module.
 Tests entire workflow from account creation to analytics.
 """
@@ -411,7 +411,7 @@ class TestDebtModuleComprehensive:
     # ========================================================================
 
     def test_complete_debt_workflow(self):
-        """Simulate complete workflow: account → payment → analytics."""
+        """Simulate complete workflow: account ? payment ? analytics."""
         from app.schemas.debt import (
             DebtAccountCreate, DebtPaymentCreate, DebtSummary, DebtStats
         )

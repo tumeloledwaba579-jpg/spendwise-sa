@@ -1,4 +1,4 @@
-﻿"""
+"""
 Income tracking service layer.
 Contains business logic for income sources, history, and analytics.
 """

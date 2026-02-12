@@ -1,4 +1,4 @@
-﻿"""
+"""
 Net worth tracking models.
 """
 from sqlalchemy import Column, Numeric, Date, Integer, DateTime, ForeignKey

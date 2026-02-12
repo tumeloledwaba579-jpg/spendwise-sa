@@ -1,4 +1,4 @@
-﻿"""
+"""
 Debt management service layer with business logic.
 """
 import logging

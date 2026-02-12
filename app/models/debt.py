@@ -1,4 +1,4 @@
-﻿"""
+"""
 Debt management models.
 """
 from sqlalchemy import Column, String, Numeric, Date, Integer, Boolean, Text, DateTime, ForeignKey

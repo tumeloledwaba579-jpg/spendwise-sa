@@ -1,4 +1,4 @@
-﻿"""Analytics and goal schemas."""
+"""Analytics and goal schemas."""
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import date, datetime

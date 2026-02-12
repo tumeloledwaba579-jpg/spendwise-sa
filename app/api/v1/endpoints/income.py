@@ -1,4 +1,4 @@
-﻿"""
+"""
 API endpoints for income tracking module.
 """
 from datetime import date

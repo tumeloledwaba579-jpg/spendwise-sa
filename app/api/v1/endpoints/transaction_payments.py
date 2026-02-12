@@ -1,4 +1,4 @@
-﻿"""
+"""
 TransactionPayment CRUD endpoints for SpendWise SA.
 """
 from typing import List, Optional

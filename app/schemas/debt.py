@@ -1,4 +1,4 @@
-﻿"""
+"""
 Pydantic schemas for debt management.
 """
 from pydantic import BaseModel, Field, validator

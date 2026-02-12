@@ -1,4 +1,4 @@
-﻿"""
+"""
 User model for authentication and data ownership.
 """
 import uuid

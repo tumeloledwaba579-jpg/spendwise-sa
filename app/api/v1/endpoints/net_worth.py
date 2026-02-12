@@ -1,4 +1,4 @@
-﻿"""
+"""
 Net worth and asset management API endpoints.
 """
 from fastapi import APIRouter, Depends, HTTPException, status

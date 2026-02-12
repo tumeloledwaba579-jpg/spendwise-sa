@@ -1,4 +1,4 @@
-﻿"""
+"""
 Dependencies for FastAPI endpoints.
 """
 
@@ -52,7 +52,7 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    # 🔥 FIX: Convert string to UUID before database query
+    # ?? FIX: Convert string to UUID before database query
     try:
         user_uuid = uuid.UUID(user_id)
     except ValueError:

@@ -2,6 +2,9 @@
 
 import * as React from 'react';
 import { useState, FormEvent } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import './register.css';
 
 // ============================================
 // TYPES & INTERFACES
@@ -38,6 +41,7 @@ interface PasswordStrength {
 // MAIN REGISTRATION PAGE COMPONENT
 // ============================================
 const RegisterPage: React.FC = () => {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegisterFormData>({
     firstName: '',
@@ -93,36 +97,35 @@ const RegisterPage: React.FC = () => {
     return phoneRegex.test(phone.replace(/\s/g, ''));
   };
 
-  const validateStep1 = (): boolean => {
-    const newErrors: FormErrors = {};
+const validateStep1 = (): boolean => {
+  const newErrors: FormErrors = {};
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
-    } else if (formData.firstName.length < 2) {
-      newErrors.firstName = 'First name must be at least 2 characters';
-    }
+  if (!formData.firstName.trim()) {
+    newErrors.firstName = 'First name is required';
+  } else if (formData.firstName.length < 2) {
+    newErrors.firstName = 'First name must be at least 2 characters';
+  }
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    } else if (formData.lastName.length < 2) {
-      newErrors.lastName = 'Last name must be at least 2 characters';
-    }
+  if (!formData.lastName.trim()) {
+    newErrors.lastName = 'Last name is required';
+  } else if (formData.lastName.length < 2) {
+    newErrors.lastName = 'Last name must be at least 2 characters';
+  }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
+  if (!formData.email.trim()) {
+    newErrors.email = 'Email is required';
+  } else if (!validateEmail(formData.email)) {
+    newErrors.email = 'Please enter a valid email address';
+  }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!validatePhone(formData.phone)) {
-      newErrors.phone = 'Please enter a valid South African phone number';
-    }
+  // Phone is now optional, only validate if provided
+  if (formData.phone.trim() && !validatePhone(formData.phone)) {
+    newErrors.phone = 'Please enter a valid South African phone number';
+  }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   const validateStep2 = (): boolean => {
     const newErrors: FormErrors = {};
@@ -168,48 +171,73 @@ const RegisterPage: React.FC = () => {
   // ============================================
   // FORM SUBMISSION
   // ============================================
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
 
-    if (!validateStep2()) return;
+  if (!validateStep2()) return;
 
-    setIsLoading(true);
-    setErrors({});
+  setIsLoading(true);
+  setErrors({});
 
-    try {
-      const response = await fetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
-          marketing_consent: formData.receiveUpdates,
-        }),
-      });
+  try {
+    // CORRECT FORMAT for your backend
+    const payload = {
+      email: formData.email,
+      password: formData.password,
+      full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+      // Optional fields (only include if your backend accepts them)
+      ...(formData.phone && { phone: formData.phone }), // Only include if not empty
+      ...(formData.receiveUpdates !== undefined && { 
+        marketing_consent: formData.receiveUpdates 
+      }),
+    };
 
-      const data = await response.json();
+    console.log('Sending payload:', payload); // Keep this for debugging
 
-      if (response.ok) {
-        // Store JWT token
-        localStorage.setItem('auth_token', data.access_token);
-        
-        // Redirect to onboarding or dashboard
-        window.location.href = '/onboarding';
+    const response = await fetch('http://localhost:8000/api/v1/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Store JWT token
+      localStorage.setItem('auth_token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user || {}));
+      
+      // Redirect to dashboard or onboarding
+      window.location.href = '/dashboard';
+    } else {
+      // Show backend validation errors
+      if (data.detail) {
+        // Handle detailed validation errors
+        if (Array.isArray(data.detail)) {
+          const fieldErrors: FormErrors = {};
+          data.detail.forEach((error: any) => {
+            if (error.loc && error.loc.length > 1) {
+              const field = error.loc[1];
+              fieldErrors[field as keyof FormErrors] = error.msg;
+            }
+          });
+          setErrors(fieldErrors);
+        } else {
+          setErrors({ general: data.detail });
+        }
       } else {
         setErrors({ general: data.message || 'Registration failed. Please try again.' });
       }
-    } catch (error) {
-      setErrors({ general: 'Network error. Please check your connection and try again.' });
-    } finally {
-      setIsLoading(false);
     }
-  };
-
+  } catch (error) {
+    console.error('Registration error:', error);
+    setErrors({ general: 'Network error. Please check your connection and try again.' });
+  } finally {
+    setIsLoading(false);
+  }
+};
   // ============================================
   // INPUT HANDLERS
   // ============================================
@@ -230,8 +258,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="register-page">
+    <div className="register-page">
       {/* Left Panel - Branding & Benefits */}
       <div className="register-left">
         <div className="register-left-content">
@@ -461,7 +488,7 @@ const RegisterPage: React.FC = () => {
                   {errors.phone && (
                     <p className="error-message">{errors.phone}</p>
                   )}
-                  <p className="helper-text">We'll never share your phone number</p>
+                  <p className="helper-text">Optional - for account recovery and notifications</p>
                 </div>
 
                 <button
@@ -726,850 +753,14 @@ const RegisterPage: React.FC = () => {
           {/* Sign In Link */}
           <div className="footer-link">
             Already have an account?{' '}
-            <a href="/login" className="link">
+            <Link href="/login" className="link">
               Sign in
-            </a>
+            </Link>
           </div>
         </div>
       </div>
-
-      <style>{`
-        /* ============================================
-           LAYOUT
-           ============================================ */
-        .register-page {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          min-height: 100vh;
-          font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        /* ============================================
-           LEFT PANEL
-           ============================================ */
-        .register-left {
-          background: linear-gradient(135deg, #002855 0%, #0052CC 50%, #00875A 100%);
-          position: relative;
-          overflow: hidden;
-          padding: 48px;
-          display: flex;
-          align-items: center;
-        }
-
-        .register-left::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          right: -25%;
-          width: 600px;
-          height: 600px;
-          background: radial-gradient(circle, rgba(0, 200, 83, 0.15) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: float 20s ease-in-out infinite;
-        }
-
-        .register-left::after {
-          content: '';
-          position: absolute;
-          bottom: -30%;
-          left: -20%;
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, rgba(0, 102, 204, 0.1) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: float 25s ease-in-out infinite reverse;
-        }
-
-        .register-left-content {
-          position: relative;
-          z-index: 1;
-          max-width: 500px;
-          animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .logo {
-          display: inline-block;
-          font-size: 32px;
-          font-weight: 800;
-          background: linear-gradient(135deg, #00E676 0%, #FFFFFF 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          margin-bottom: 48px;
-          text-decoration: none;
-          letter-spacing: -0.5px;
-        }
-
-        .marketing-content {
-          color: white;
-        }
-
-        .marketing-title {
-          font-size: 48px;
-          font-weight: 800;
-          line-height: 1.2;
-          margin-bottom: 24px;
-          letter-spacing: -1px;
-        }
-
-        .marketing-title-gradient {
-          background: linear-gradient(135deg, #00E676 0%, #00C853 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .marketing-description {
-          font-size: 18px;
-          line-height: 1.7;
-          opacity: 0.9;
-          margin-bottom: 40px;
-        }
-
-        .benefits-list {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 48px;
-        }
-
-        .benefit-item {
-          display: flex;
-          gap: 16px;
-          align-items: flex-start;
-        }
-
-        .benefit-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .benefit-icon svg {
-          width: 24px;
-          height: 24px;
-          color: #00E676;
-        }
-
-        .benefit-content {
-          flex: 1;
-        }
-
-        .benefit-title {
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 4px;
-        }
-
-        .benefit-description {
-          font-size: 14px;
-          opacity: 0.8;
-          line-height: 1.5;
-        }
-
-        .testimonial {
-          padding: 24px;
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(10px);
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .testimonial-quote {
-          font-size: 15px;
-          line-height: 1.7;
-          margin-bottom: 16px;
-          font-style: italic;
-        }
-
-        .testimonial-author {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .author-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #00E676, #0066CC);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 14px;
-        }
-
-        .author-name {
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .author-title {
-          font-size: 13px;
-          opacity: 0.7;
-        }
-
-        /* ============================================
-           RIGHT PANEL
-           ============================================ */
-        .register-right {
-          background: #FAFBFC;
-          padding: 48px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow-y: auto;
-        }
-
-        .register-form-container {
-          width: 100%;
-          max-width: 520px;
-          animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        /* ============================================
-           PROGRESS INDICATOR
-           ============================================ */
-        .progress-indicator {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 40px;
-          gap: 16px;
-        }
-
-        .progress-step {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .step-number {
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
-          background: #E0E0E0;
-          color: #6B778C;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 18px;
-          transition: all 0.3s;
-        }
-
-        .progress-step.active .step-number {
-          background: linear-gradient(135deg, #0066CC, #00C853);
-          color: white;
-          box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
-        }
-
-        .progress-step.completed .step-number {
-          background: #00C853;
-          color: white;
-        }
-
-        .progress-step.completed .step-number svg {
-          width: 24px;
-          height: 24px;
-        }
-
-        .step-label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #6B778C;
-        }
-
-        .progress-step.active .step-label {
-          color: #0066CC;
-        }
-
-        .progress-line {
-          width: 80px;
-          height: 2px;
-          background: #E0E0E0;
-        }
-
-        /* ============================================
-           FORM HEADER
-           ============================================ */
-        .form-header {
-          margin-bottom: 32px;
-          text-align: center;
-        }
-
-        .form-title {
-          font-size: 32px;
-          font-weight: 800;
-          color: #091E42;
-          margin-bottom: 8px;
-          letter-spacing: -0.5px;
-        }
-
-        .form-subtitle {
-          font-size: 16px;
-          color: #6B778C;
-          line-height: 1.5;
-        }
-
-        /* ============================================
-           ALERT
-           ============================================ */
-        .alert {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 16px 20px;
-          border-radius: 12px;
-          margin-bottom: 24px;
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .alert-error {
-          background: #FFEBE6;
-          color: #DE350B;
-          border: 1px solid #FFBDAD;
-        }
-
-        .alert-icon {
-          width: 20px;
-          height: 20px;
-          flex-shrink: 0;
-        }
-
-        /* ============================================
-           FORM
-           ============================================ */
-        .register-form {
-          margin-bottom: 32px;
-        }
-
-        .form-step {
-          animation: fadeIn 0.4s ease-out;
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        .form-group {
-          margin-bottom: 20px;
-        }
-
-        .form-label {
-          display: block;
-          font-size: 14px;
-          font-weight: 600;
-          color: #091E42;
-          margin-bottom: 8px;
-        }
-
-        .input-wrapper {
-          position: relative;
-        }
-
-        .input-icon {
-          position: absolute;
-          left: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 20px;
-          height: 20px;
-          color: #6B778C;
-          pointer-events: none;
-        }
-
-        .form-input {
-          width: 100%;
-          padding: 14px 16px 14px 48px;
-          font-size: 15px;
-          font-family: inherit;
-          border: 2px solid #DFE1E6;
-          border-radius: 8px;
-          background: white;
-          color: #091E42;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .form-input::placeholder {
-          color: #97A0AF;
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: #0052CC;
-          box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.1);
-        }
-
-        .form-input.error {
-          border-color: #DE350B;
-          background: #FFF4F3;
-        }
-
-        .form-input.error:focus {
-          border-color: #DE350B;
-          box-shadow: 0 0 0 4px rgba(222, 53, 11, 0.1);
-        }
-
-        .password-toggle {
-          position: absolute;
-          right: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          padding: 4px;
-          cursor: pointer;
-          color: #6B778C;
-          transition: color 0.2s;
-        }
-
-        .password-toggle:hover {
-          color: #091E42;
-        }
-
-        .password-toggle svg {
-          width: 20px;
-          height: 20px;
-          display: block;
-        }
-
-        .error-message {
-          margin-top: 8px;
-          font-size: 13px;
-          color: #DE350B;
-          font-weight: 500;
-        }
-
-        .helper-text {
-          margin-top: 6px;
-          font-size: 13px;
-          color: #6B778C;
-        }
-
-        /* ============================================
-           PASSWORD STRENGTH
-           ============================================ */
-        .password-strength {
-          margin-top: 12px;
-        }
-
-        .strength-label {
-          font-size: 13px;
-          color: #505F79;
-          margin-bottom: 8px;
-          font-weight: 600;
-        }
-
-        .strength-bars {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 6px;
-          height: 4px;
-        }
-
-        .strength-bar {
-          height: 100%;
-          border-radius: 2px;
-          background: #DFE1E6;
-          transition: background-color 0.3s;
-        }
-
-        /* ============================================
-           PASSWORD REQUIREMENTS
-           ============================================ */
-        .password-requirements {
-          padding: 16px;
-          background: #F4F5F7;
-          border-radius: 8px;
-          margin-bottom: 20px;
-        }
-
-        .requirement-title {
-          font-size: 13px;
-          font-weight: 600;
-          color: #091E42;
-          margin-bottom: 12px;
-        }
-
-        .requirements-list {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-        }
-
-        .requirement-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
-          color: #6B778C;
-        }
-
-        .requirement-item.met {
-          color: #00875A;
-        }
-
-        .requirement-icon {
-          width: 16px;
-          height: 16px;
-          flex-shrink: 0;
-        }
-
-        .requirement-item:not(.met) .requirement-icon {
-          opacity: 0.3;
-        }
-
-        /* ============================================
-           CHECKBOX
-           ============================================ */
-        .form-options {
-          margin-bottom: 24px;
-        }
-
-        .checkbox-label {
-          display: flex;
-          align-items: flex-start;
-          cursor: pointer;
-          user-select: none;
-        }
-
-        .checkbox-label input[type="checkbox"] {
-          position: absolute;
-          opacity: 0;
-          cursor: pointer;
-        }
-
-        .checkbox-custom {
-          width: 20px;
-          height: 20px;
-          border: 2px solid #DFE1E6;
-          border-radius: 4px;
-          margin-right: 12px;
-          position: relative;
-          transition: all 0.2s;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-
-        .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
-          background: #0052CC;
-          border-color: #0052CC;
-        }
-
-        .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
-          content: '';
-          position: absolute;
-          left: 5px;
-          top: 2px;
-          width: 5px;
-          height: 9px;
-          border: solid white;
-          border-width: 0 2px 2px 0;
-          transform: rotate(45deg);
-        }
-
-        .checkbox-text {
-          font-size: 14px;
-          color: #505F79;
-          line-height: 1.5;
-        }
-
-        .link {
-          color: #0052CC;
-          text-decoration: none;
-          font-weight: 600;
-          transition: color 0.2s;
-        }
-
-        .link:hover {
-          color: #0066CC;
-        }
-
-        /* ============================================
-           BUTTONS
-           ============================================ */
-        .form-actions {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 12px;
-        }
-
-        .btn-back {
-          padding: 16px 24px;
-          font-size: 16px;
-          font-weight: 700;
-          font-family: inherit;
-          color: #505F79;
-          background: white;
-          border: 2px solid #DFE1E6;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        .btn-back:hover:not(:disabled) {
-          border-color: #0052CC;
-          color: #0052CC;
-        }
-
-        .btn-back:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .btn-submit {
-          width: 100%;
-          padding: 16px 32px;
-          font-size: 16px;
-          font-weight: 700;
-          font-family: inherit;
-          color: white;
-          background: linear-gradient(135deg, #0066CC 0%, #00C853 100%);
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
-        }
-
-        .btn-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(0, 102, 204, 0.4);
-        }
-
-        .btn-submit:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .btn-submit:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .btn-icon {
-          width: 20px;
-          height: 20px;
-        }
-
-        .spinner {
-          width: 20px;
-          height: 20px;
-          animation: spin 1s linear infinite;
-        }
-
-        .spinner-circle {
-          stroke: currentColor;
-          stroke-dasharray: 50;
-          stroke-dashoffset: 0;
-          animation: spinnerDash 1.5s ease-in-out infinite;
-        }
-
-        /* ============================================
-           DIVIDER
-           ============================================ */
-        .divider {
-          position: relative;
-          text-align: center;
-          margin: 32px 0;
-        }
-
-        .divider::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: #DFE1E6;
-        }
-
-        .divider-text {
-          position: relative;
-          display: inline-block;
-          padding: 0 16px;
-          background: #FAFBFC;
-          font-size: 14px;
-          color: #6B778C;
-          font-weight: 500;
-        }
-
-        /* ============================================
-           SOCIAL LOGIN
-           ============================================ */
-        .social-login {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 32px;
-        }
-
-        .social-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 14px 24px;
-          font-size: 15px;
-          font-weight: 600;
-          font-family: inherit;
-          color: #091E42;
-          background: white;
-          border: 2px solid #DFE1E6;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .social-btn:hover {
-          border-color: #0052CC;
-          background: #FAFBFC;
-        }
-
-        .social-icon {
-          width: 20px;
-          height: 20px;
-        }
-
-        /* ============================================
-           FOOTER LINK
-           ============================================ */
-        .footer-link {
-          text-align: center;
-          font-size: 15px;
-          color: #6B778C;
-        }
-
-        /* ============================================
-           ANIMATIONS
-           ============================================ */
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-20px) rotate(5deg);
-          }
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes spinnerDash {
-          0% {
-            stroke-dashoffset: 50;
-          }
-          50% {
-            stroke-dashoffset: 12.5;
-            transform: rotate(135deg);
-          }
-          100% {
-            stroke-dashoffset: 50;
-            transform: rotate(450deg);
-          }
-        }
-
-        /* ============================================
-           RESPONSIVE
-           ============================================ */
-        @media (max-width: 1024px) {
-          .register-page {
-            grid-template-columns: 1fr;
-          }
-
-          .register-left {
-            display: none;
-          }
-
-          .register-right {
-            padding: 32px 24px;
-          }
-
-          .requirements-list {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .register-right {
-            padding: 24px 16px;
-          }
-
-          .form-title {
-            font-size: 28px;
-          }
-
-          .form-row {
-            grid-template-columns: 1fr;
-          }
-
-          .social-login {
-            grid-template-columns: 1fr;
-          }
-
-          .form-actions {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
-    </>
   );
 };
 
 export default RegisterPage;
-

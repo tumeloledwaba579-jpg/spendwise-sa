@@ -1,4 +1,4 @@
-﻿"""
+"""
 Minimal startup validation without complex imports.
 """
 import sys
@@ -21,7 +21,7 @@ def run_all_checks():
                 if file.endswith(".pyc"):
                     os.remove(os.path.join(root, file))
         
-        print("✅ Cache cleared")
+        print("? Cache cleared")
         
         # Test basic imports
         print("\nTesting critical imports...")
@@ -29,12 +29,12 @@ def run_all_checks():
         # Test 1: Can we import basic models?
         from app.models.account import Account
         from app.models.income import IncomeSource, IncomeHistory, IncomeMonthlySummary
-        print("  ✅ Models import successfully")
+        print("  ? Models import successfully")
         
         # Test 2: Can we import basic schemas?
         from app.schemas.account import AccountInDB
         from app.schemas.income import IncomeSourceInDB, IncomeHistoryInDB, IncomeMonthlySummaryOut
-        print("  ✅ Schemas import successfully")
+        print("  ? Schemas import successfully")
         
         # Test 3: Check schema configurations
         print("\nChecking schema configurations...")
@@ -51,21 +51,21 @@ def run_all_checks():
             if not hasattr(schema.Config, 'use_enum_values') or not schema.Config.use_enum_values:
                 raise RuntimeError(f"Schema {name} missing use_enum_values=True")
         
-        print("  ✅ All schemas configured correctly")
+        print("  ? All schemas configured correctly")
         
         print("\n" + "="*60)
-        print("✅ ESSENTIAL CHECKS PASSED")
+        print("? ESSENTIAL CHECKS PASSED")
         print("="*60 + "\n")
         
     except ImportError as e:
-        print(f"\n❌ IMPORT ERROR: {e}")
+        print(f"\n? IMPORT ERROR: {e}")
         print("This usually indicates a missing import or circular dependency.")
         raise
     except SyntaxError as e:
-        print(f"\n❌ SYNTAX ERROR: {e}")
+        print(f"\n? SYNTAX ERROR: {e}")
         print(f"File: {e.filename}")
         print(f"Line {e.lineno}: {e.text}")
         raise
     except Exception as e:
-        print(f"\n❌ CHECK FAILED: {type(e).__name__}: {e}")
+        print(f"\n? CHECK FAILED: {type(e).__name__}: {e}")
         raise
