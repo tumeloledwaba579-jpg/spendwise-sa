@@ -144,11 +144,30 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-container">
-      {/* Navigation Bar */}
+      {/* Navigation Bar - UPDATED with Income link */}
       <nav className="dashboard-navbar">
         <Link href="/dashboard" className="navbar-brand">
           <span className="brand-logo">💰 SpendWise SA</span>
         </Link>
+        
+        {/* ✅ ADD THIS - Navigation Links */}
+        <div className="navbar-links">
+          <Link href="/dashboard" className="nav-link active">
+            📊 Dashboard
+          </Link>
+          <Link href="/dashboard/income" className="nav-link">
+            💵 Income
+          </Link>
+          <Link href="/dashboard/expenses" className="nav-link">
+            💸 Expenses
+          </Link>
+          <Link href="/dashboard/budgets" className="nav-link">
+            📋 Budgets
+          </Link>
+          <Link href="/dashboard/reports" className="nav-link">
+            📈 Reports
+          </Link>
+        </div>
         
         <div className="navbar-user">
           <div className="user-avatar">
@@ -222,43 +241,49 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* ✅ ADD THE PIE CHART HERE - Full width below the 4 cards */}
+            {/* Pie Chart */}
             <div style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
               <IncomeExpensePieChart />
             </div>
           </div>
         )}
 
-        {/* Quick Actions */}
+        {/* Quick Actions - UPDATED with Income button */}
         <section className="quick-actions fade-in">
           <h2 className="section-title">Quick Actions</h2>
           <div className="actions-grid">
-            <Link href="/transactions" className="action-button">
+            {/* ✅ ADD THIS - Highlighted Income Button */}
+            <Link href="/dashboard/income" className="action-button highlight">
+              <div className="action-icon">💰</div>
+              <span className="action-label">Track Income</span>
+            </Link>
+            
+            <Link href="/dashboard/transactions/add" className="action-button">
               <div className="action-icon">💳</div>
               <span className="action-label">Add Transaction</span>
             </Link>
             
-            <Link href="/budget" className="action-button">
+            <Link href="/dashboard/budgets" className="action-button">
               <div className="action-icon">📊</div>
               <span className="action-label">Set Budget</span>
             </Link>
             
-            <Link href="/goals" className="action-button">
+            <Link href="/dashboard/goals" className="action-button">
               <div className="action-icon">🏆</div>
               <span className="action-label">Set Goals</span>
             </Link>
             
-            <Link href="/reports" className="action-button">
+            <Link href="/dashboard/reports" className="action-button">
               <div className="action-icon">📈</div>
               <span className="action-label">View Reports</span>
             </Link>
             
-            <Link href="/profile" className="action-button">
+            <Link href="/dashboard/profile" className="action-button">
               <div className="action-icon">👤</div>
               <span className="action-label">My Profile</span>
             </Link>
             
-            <Link href="/settings" className="action-button">
+            <Link href="/dashboard/settings" className="action-button">
               <div className="action-icon">⚙️</div>
               <span className="action-label">Settings</span>
             </Link>
@@ -271,7 +296,7 @@ export default function DashboardPage() {
           <div className="activity-list">
             {recentActivity.map((activity) => (
               <div key={activity.id} className="activity-item">
-                <div className="activity-icon">
+                <div className={`activity-icon ${activity.type}`}>
                   {activity.type === 'income' ? '💰' : 
                    activity.type === 'expense' ? '💸' : '🔄'}
                 </div>
@@ -280,12 +305,9 @@ export default function DashboardPage() {
                   <p className="activity-description">{activity.description}</p>
                 </div>
                 <div className="activity-time">
-                  <div style={{ 
-                    color: activity.type === 'income' ? '#00C853' : 
-                           activity.type === 'expense' ? '#FF3D00' : '#667eea',
-                    fontWeight: 600 
-                  }}>
-                    {activity.type === 'income' ? '+' : activity.type === 'expense' ? '-' : ''}
+                  <div className={`activity-amount ${activity.type}`}>
+                    {activity.type === 'income' ? '+' : 
+                     activity.type === 'expense' ? '-' : ''}
                     {formatCurrency(activity.amount)}
                   </div>
                   <span>{activity.time}</span>

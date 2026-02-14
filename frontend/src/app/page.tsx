@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext'; // Add this import
 import './globals.css';
 
 // Data arrays
@@ -88,6 +89,7 @@ const testimonials = [
 
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
+  const { user, isLoading: authLoading } = useAuth(); // Get auth state
 
   useEffect(() => {
     const handleScroll = () => {
@@ -111,10 +113,35 @@ export default function HomePage() {
             <Link href="#features">Features</Link>
             <Link href="#how-it-works">How It Works</Link>
             <Link href="#pricing">Pricing</Link>
-            <Link href="/login" className="nav-link">Sign In</Link>
-            <Link href="/register" className="nav-button">
-              Get Started Free
-            </Link>
+            
+            {/* UPDATED: Conditional navigation based on auth state */}
+            {!authLoading && user ? (
+              <>
+                {/* Show dashboard links when user is logged in */}
+                <Link href="/dashboard" className="nav-link">
+                  📊 Dashboard
+                </Link>
+                <Link href="/dashboard/income" className="nav-link highlight-link">
+                  💵 Income
+                </Link>
+                <div className="user-menu">
+                  <span className="user-email-small">
+                    {user.email?.split('@')[0]}
+                  </span>
+                  <Link href="/dashboard" className="nav-button">
+                    My Account
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Show login/signup when user is logged out */}
+                <Link href="/login" className="nav-link">Sign In</Link>
+                <Link href="/register" className="nav-button">
+                  Get Started Free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -137,19 +164,40 @@ export default function HomePage() {
             achieve your financial goals faster.
           </p>
           <div className="hero-cta">
-            <Link href="/register" className="cta-primary">
-              Start Free Trial
-              <svg className="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </Link>
-            <Link href="#demo" className="cta-secondary">
-              Watch Demo
-              <svg className="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
-              </svg>
-            </Link>
+            {!authLoading && user ? (
+              // Show dashboard button when logged in
+              <>
+                <Link href="/dashboard" className="cta-primary">
+                  Go to Dashboard
+                  <svg className="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+                <Link href="/dashboard/income" className="cta-secondary">
+                  Track Income
+                  <svg className="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2v20M17 7l-5-5-5 5M7 17l5 5 5-5"/>
+                  </svg>
+                </Link>
+              </>
+            ) : (
+              // Show signup button when logged out
+              <>
+                <Link href="/register" className="cta-primary">
+                  Start Free Trial
+                  <svg className="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+                <Link href="#demo" className="cta-secondary">
+                  Watch Demo
+                  <svg className="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+                  </svg>
+                </Link>
+              </>
+            )}
           </div>
           <div className="hero-stats">
             <div className="stat-item">
@@ -187,8 +235,10 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Rest of your sections remain exactly the same... */}
       {/* Features Section */}
       <section id="features" className="features">
+        {/* ... keep all your existing features section code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Everything You Need to 
@@ -221,6 +271,7 @@ export default function HomePage() {
 
       {/* How It Works */}
       <section id="how-it-works" className="how-it-works">
+        {/* ... keep all your existing how it works code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Get Started in 
@@ -253,6 +304,7 @@ export default function HomePage() {
 
       {/* Pricing */}
       <section id="pricing" className="pricing">
+        {/* ... keep all your existing pricing code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Simple, Transparent
@@ -329,6 +381,7 @@ export default function HomePage() {
 
       {/* Testimonials */}
       <section className="testimonials">
+        {/* ... keep all your existing testimonials code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Loved by 
@@ -365,28 +418,49 @@ export default function HomePage() {
       <section className="cta-section">
         <div className="cta-container">
           <h2 className="cta-title">
-            Ready to Take Control of Your Finances?
+            {user ? 'Continue Your Financial Journey' : 'Ready to Take Control of Your Finances?'}
           </h2>
           <p className="cta-subtitle">
-            Join 50,000+ South Africans who've already started their journey to financial freedom
+            {user 
+              ? 'Head to your dashboard to track income, manage expenses, and achieve your goals.'
+              : 'Join 50,000+ South Africans who\'ve already started their journey to financial freedom'}
           </p>
           <div className="cta-buttons">
-            <Link href="/register" className="cta-primary large">
-              Get Started Free
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </Link>
-            <Link href="/contact" className="cta-secondary large">
-              Contact Sales
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard" className="cta-primary large">
+                  Go to Dashboard
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+                <Link href="/dashboard/income" className="cta-secondary large">
+                  Track Income
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/register" className="cta-primary large">
+                  Get Started Free
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+                <Link href="/contact" className="cta-secondary large">
+                  Contact Sales
+                </Link>
+              </>
+            )}
           </div>
-          <p className="cta-note">No credit card required • 14-day free trial • Cancel anytime</p>
+          {!user && (
+            <p className="cta-note">No credit card required • 14-day free trial • Cancel anytime</p>
+          )}
         </div>
       </section>
 
       {/* Footer */}
       <footer className="footer">
+        {/* ... keep all your existing footer code ... */}
         <div className="footer-content">
           <div className="footer-section">
             <Link href="/" className="footer-logo">

@@ -1,10 +1,6 @@
 /* ============================================
    DASHBOARD LAYOUT
-    ============================================ */
-/* Add at the very top */
-.dashboard-container {
-  border: 3px solid red !important; /* Temporary debug */
-}
+   ============================================ */
 .dashboard-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -12,7 +8,7 @@
 }
 
 /* ============================================
-   NAVBAR
+   NAVBAR - WITH NAVIGATION LINKS
    ============================================ */
 .dashboard-navbar {
   background: rgba(255, 255, 255, 0.95);
@@ -23,6 +19,7 @@
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
 }
 
 .navbar-brand {
@@ -39,6 +36,51 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Navigation Links - ADD THIS */
+.navbar-links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin: 0 16px;
+}
+
+.nav-link {
+  color: #666;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 8px 0;
+  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-link:hover {
+  color: #667eea;
+}
+
+.nav-link.active {
+  color: #667eea;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Income link special styling */
+.nav-link[href*="income"]:hover {
+  color: #00C853;
 }
 
 .navbar-user {
@@ -186,7 +228,7 @@
 }
 
 /* ============================================
-   QUICK ACTIONS
+   QUICK ACTIONS - WITH HIGHLIGHTED INCOME BUTTON
    ============================================ */
 .quick-actions {
   background: rgba(255, 255, 255, 0.95);
@@ -207,7 +249,7 @@
 
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
 }
 
@@ -216,7 +258,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 24px;
+  padding: 20px;
   background: white;
   border: 2px solid #E5E7EB;
   border-radius: 12px;
@@ -232,6 +274,23 @@
   box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
 }
 
+/* HIGHLIGHTED INCOME BUTTON - ADD THIS */
+.action-button.highlight {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: transparent;
+  color: white;
+}
+
+.action-button.highlight .action-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.action-button.highlight:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+}
+
 .action-icon {
   width: 56px;
   height: 56px;
@@ -242,15 +301,17 @@
   justify-content: center;
   color: #667eea;
   font-size: 24px;
+  transition: all 0.3s;
 }
 
 .action-label {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
+  text-align: center;
 }
 
 /* ============================================
-   RECENT ACTIVITY
+   RECENT ACTIVITY - WITH COLORED AMOUNTS
    ============================================ */
 .recent-activity {
   background: rgba(255, 255, 255, 0.95);
@@ -274,19 +335,38 @@
   background: white;
   border-radius: 12px;
   border: 1px solid #E5E7EB;
+  transition: all 0.2s ease;
+}
+
+.activity-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
 }
 
 .activity-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #667eea20, #764ba220);
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #667eea;
+  font-size: 24px;
   flex-shrink: 0;
-  font-size: 20px;
+}
+
+.activity-icon.income {
+  background: linear-gradient(135deg, #00C85320, #00962420);
+  color: #00C853;
+}
+
+.activity-icon.expense {
+  background: linear-gradient(135deg, #FF3D0020, #DD2C0020);
+  color: #FF3D00;
+}
+
+.activity-icon.transfer {
+  background: linear-gradient(135deg, #667eea20, #764ba220);
+  color: #667eea;
 }
 
 .activity-content {
@@ -305,8 +385,6 @@
 }
 
 .activity-time {
-  font-size: 12px;
-  color: #999;
   text-align: right;
   display: flex;
   flex-direction: column;
@@ -314,8 +392,25 @@
   gap: 4px;
 }
 
+.activity-amount {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.activity-amount.income {
+  color: #00C853;
+}
+
+.activity-amount.expense {
+  color: #FF3D00;
+}
+
+.activity-amount.transfer {
+  color: #667eea;
+}
+
 /* ============================================
-   LOADING STATE - FIXED CLASS NAMES
+   LOADING STATE
    ============================================ */
 .loading-container {
   display: flex;
@@ -379,15 +474,30 @@
 }
 
 /* ============================================
-   RESPONSIVE
+   RESPONSIVE - WITH NAVIGATION
    ============================================ */
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .dashboard-navbar {
-    padding: 16px 20px;
     flex-direction: column;
     gap: 16px;
+    padding: 16px 20px;
   }
   
+  .navbar-links {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 8px 0;
+  }
+  
+  .nav-link {
+    font-size: 14px;
+    padding: 6px 0;
+  }
+}
+
+@media (max-width: 768px) {
   .dashboard-content {
     padding: 20px;
   }
@@ -405,7 +515,12 @@
   }
   
   .actions-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
+  .action-button {
+    padding: 16px;
   }
   
   .stat-value {
@@ -424,5 +539,43 @@
   
   .activity-time {
     align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-user {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .user-name {
+    display: none;
+  }
+  
+  .navbar-links {
+    gap: 12px;
+  }
+  
+  .nav-link {
+    font-size: 13px;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-button {
+    flex-direction: row;
+    padding: 16px;
+  }
+  
+  .action-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+  
+  .welcome-title {
+    font-size: 28px;
   }
 }
