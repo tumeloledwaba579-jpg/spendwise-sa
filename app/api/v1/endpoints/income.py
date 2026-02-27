@@ -1,4 +1,4 @@
-"""
+﻿"""
 API endpoints for income tracking module.
 """
 from datetime import date
@@ -8,7 +8,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_current_user
+from app.api.deps import get_db
+from app.api.v1.deps_cookie import get_current_user
 from app.models.user import User
 from app.schemas.income import (
     IncomeSourceCreate, IncomeSourceInDB, IncomeSourceUpdate,
@@ -145,32 +146,84 @@ async def get_income_history(
 # MONTHLY SUMMARY ENDPOINTS
 # ============================================================================
 
-@router.get("/summary/{year}/{month}", response_model=IncomeMonthlySummaryOut)
+@router.get("/summary/{year}/{month}", response_model=dict)
 async def get_monthly_summary(
     year: int,
     month: int,
-    session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """
-    Get income summary for a specific month.
+    """Get monthly income summary with graceful empty handling."""
+    from sqlalchemy import select, func, and_
+    from app.models.income import IncomeHistory
     
-    - **year**: Year (e.g., 2026)
-    - **month**: Month (1-12)
-    
-    Returns totals, breakdown (recurring vs one-time), and counts.
-    """
-    if month < 1 or month > 12:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Month must be 1-12")
-    
-    summary = await IncomeService.get_monthly_summary(session, current_user.id, year, month)
-    if not summary:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No income data for this month"
+    # Calculate total income
+    total_query = select(func.coalesce(func.sum(IncomeHistory.amount), 0)).where(
+        and_(
+            IncomeHistory.user_id == current_user.id,
+            func.extract('year', IncomeHistory.received_date) == year,
+            func.extract('month', IncomeHistory.received_date) == month
         )
-    return summary
-
+    )
+    total_result = await db.execute(total_query)
+    total = total_result.scalar() or 0
+    
+    # Calculate total tax
+    tax_query = select(func.coalesce(func.sum(IncomeHistory.tax_amount), 0)).where(
+        and_(
+            IncomeHistory.user_id == current_user.id,
+            func.extract('year', IncomeHistory.received_date) == year,
+            func.extract('month', IncomeHistory.received_date) == month
+        )
+    )
+    tax_result = await db.execute(tax_query)
+    tax = tax_result.scalar() or 0
+    
+    # Count records
+    count_query = select(func.count()).where(
+        and_(
+            IncomeHistory.user_id == current_user.id,
+            func.extract('year', IncomeHistory.received_date) == year,
+            func.extract('month', IncomeHistory.received_date) == month
+        )
+    )
+    count_result = await db.execute(count_query)
+    count = count_result.scalar() or 0
+    
+    # Get distinct source count
+    source_count_query = select(func.count(func.distinct(IncomeHistory.income_source_id))).where(
+        and_(
+            IncomeHistory.user_id == current_user.id,
+            func.extract('year', IncomeHistory.received_date) == year,
+            func.extract('month', IncomeHistory.received_date) == month
+        )
+    )
+    source_count_result = await db.execute(source_count_query)
+    source_count = source_count_result.scalar() or 0
+    
+    # Calculate recurring vs one-time (simplified - you can enhance this)
+    recurring_query = select(func.coalesce(func.sum(IncomeHistory.amount), 0)).where(
+        and_(
+            IncomeHistory.user_id == current_user.id,
+            IncomeHistory.is_manual_entry == False,  # Assuming auto entries are recurring
+            func.extract('year', IncomeHistory.received_date) == year,
+            func.extract('month', IncomeHistory.received_date) == month
+        )
+    )
+    recurring_result = await db.execute(recurring_query)
+    recurring = recurring_result.scalar() or 0
+    
+    return {
+        "year": year,
+        "month": month,
+        "total_income": float(total),
+        "total_tax": float(tax),
+        "net_income": float(total - tax),
+        "recurring_income": float(recurring),
+        "one_time_income": float(total - recurring),
+        "source_count": source_count,
+        "record_count": count
+    }
 
 # ============================================================================
 # ANALYTICS ENDPOINTS
@@ -224,6 +277,8 @@ async def get_income_stats(
 async def health_check():
     """Health check endpoint for income module."""
     return {"status": "healthy", "module": "income"}
+
+
 
 
 

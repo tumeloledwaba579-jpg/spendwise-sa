@@ -1,4 +1,4 @@
-# Export all schema classes
+﻿# Export all schema classes
 from app.schemas.auth import (
     UserCreate, UserLogin, UserOut, Token, TokenPayload
 )
@@ -44,3 +44,4 @@ __all__ = [
     'TransactionPaymentBase', 'TransactionPaymentCreate', 
     'TransactionPaymentUpdate', 'TransactionPaymentOut',
 ]
+

@@ -1,12 +1,15 @@
 {
   "name": "spendwise-sa",
   "version": "1.0.0",
-  "description": "",
+  "description": "SpendWise SA - Personal Finance Management",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check-encodings": "powershell -File ./fix-encodings.ps1",
+    "fix-encodings": "git ls-files | xargs -I {} sh -c 'iconv -f utf-8 -t utf-8 {} > {}.tmp && mv {}.tmp {}'",
+    "precommit": "npm run check-encodings"
   },
-  "keywords": [],
+  "keywords": ["finance", "personal-finance", "budgeting"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

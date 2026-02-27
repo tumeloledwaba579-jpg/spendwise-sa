@@ -1,22 +1,32 @@
-"""
+﻿"""
 Transaction Pydantic schemas for the SpendWise SA API.
 """
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from uuid import UUID
+from pydantic import BaseModel, Field, validator
 
 class TransactionBase(BaseModel):
     """Base schema for transaction."""
     account_id: str
     category_id: Optional[str] = None
     amount: float
-    currency: str = Field(default="USD", min_length=3, max_length=3)
+    currency: str = Field(default="ZAR", min_length=3, max_length=3)
     transaction_date: datetime
     description: str = Field(..., min_length=1, max_length=255)
     notes: Optional[str] = None
     is_transfer: bool = Field(default=False)
     is_recurring: bool = Field(default=False)
     recurrence_rule: Optional[str] = Field(None, description="Recurrence rule (e.g., 'MONTHLY')")
+
+    @validator('account_id', 'category_id', pre=True)
+    def convert_uuid_to_str(cls, v):
+        """Convert UUID to string if needed."""
+        if v is None:
+            return v
+        if isinstance(v, UUID):
+            return str(v)
+        return v
 
 class TransactionCreate(TransactionBase):
     """Schema for creating a new transaction."""
@@ -35,6 +45,15 @@ class TransactionUpdate(BaseModel):
     is_recurring: Optional[bool] = None
     recurrence_rule: Optional[str] = None
 
+    @validator('account_id', 'category_id', pre=True)
+    def convert_uuid_to_str(cls, v):
+        """Convert UUID to string if needed."""
+        if v is None:
+            return v
+        if isinstance(v, UUID):
+            return str(v)
+        return v
+
 class TransactionOut(TransactionBase):
     """Schema for transaction response."""
     id: str
@@ -43,6 +62,15 @@ class TransactionOut(TransactionBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
+
+    @validator('id', 'user_id', 'account_id', 'category_id', pre=True)
+    def convert_uuid_to_str(cls, v):
+        """Convert UUID to string if needed."""
+        if v is None:
+            return v
+        if isinstance(v, UUID):
+            return str(v)
+        return v

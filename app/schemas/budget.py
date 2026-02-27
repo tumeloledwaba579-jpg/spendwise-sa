@@ -1,4 +1,4 @@
-"""
+﻿"""
 Budget Pydantic schemas for the SpendWise SA API.
 """
 from datetime import datetime
@@ -43,6 +43,7 @@ class BudgetOut(BudgetBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
+

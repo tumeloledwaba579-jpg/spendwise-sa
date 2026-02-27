@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import * as React from 'react';
 import { useState, FormEvent } from 'react';
@@ -171,7 +171,7 @@ const validateStep1 = (): boolean => {
   // ============================================
   // FORM SUBMISSION
   // ============================================
- const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   e.preventDefault();
 
   if (!validateStep2()) return;
@@ -186,13 +186,10 @@ const validateStep1 = (): boolean => {
       password: formData.password,
       full_name: `${formData.firstName} ${formData.lastName}`.trim(),
       // Optional fields (only include if your backend accepts them)
-      ...(formData.phone && { phone: formData.phone }), // Only include if not empty
-      ...(formData.receiveUpdates !== undefined && { 
-        marketing_consent: formData.receiveUpdates 
-      }),
+      ...(formData.phone && { phone: formData.phone }),
     };
 
-    console.log('Sending payload:', payload); // Keep this for debugging
+    console.log('Sending payload:', payload);
 
     const response = await fetch('http://localhost:8000/api/v1/auth/register', {
       method: 'POST',
@@ -200,19 +197,26 @@ const validateStep1 = (): boolean => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      credentials: 'include', // ✅ CRITICAL: Send/receive cookies
     });
 
     const data = await response.json();
 
     if (response.ok) {
-      // Store JWT token
-      localStorage.setItem('auth_token', data.access_token);
+      // ✅ REMOVE localStorage token storage - using HTTP-only cookies!
+      // The token is automatically stored in HTTP-only cookie by the backend
+      
+      // You can still store non-sensitive user info if needed
       localStorage.setItem('user', JSON.stringify(data.user || {}));
       
-      // Redirect to dashboard or onboarding
-      window.location.href = '/dashboard';
+      console.log('Registration successful, redirecting to login...');
+      
+      // ✅ Redirect to login page (not dashboard - they need to log in)
+      window.location.href = '/login?registered=true';
     } else {
-      // Show backend validation errors
+      // Handle errors
+      console.error('Registration failed:', data);
+      
       if (data.detail) {
         // Handle detailed validation errors
         if (Array.isArray(data.detail)) {

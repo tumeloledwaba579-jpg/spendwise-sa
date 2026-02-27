@@ -1,4 +1,4 @@
-"""
+﻿"""
 Authentication schemas for the SpendWise SA API.
 """
 import uuid
@@ -47,7 +47,7 @@ class UserOut(BaseModel):
             return str(v)
         return v
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 # -------------------------------
@@ -60,7 +60,7 @@ class Token(BaseModel):
     user: dict 
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 class TokenPayload(BaseModel):
@@ -69,6 +69,7 @@ class TokenPayload(BaseModel):
     exp: int  # expiration timestamp
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
+

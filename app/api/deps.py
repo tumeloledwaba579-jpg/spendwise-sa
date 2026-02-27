@@ -1,23 +1,22 @@
 """
 Dependencies for FastAPI endpoints.
 """
-
 import uuid
 from typing import AsyncGenerator
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
+from sqlalchemy import select
+
+# Import from the correct location
+from app.core.database import get_db, async_session
 from app.core.security import decode_access_token
 from app.models.user import User
 from app.schemas.auth import TokenPayload
-from sqlalchemy import select
-
 
 # OAuth2 scheme for token authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -25,16 +24,6 @@ async def get_current_user(
 ) -> User:
     """
     Get the current authenticated user from JWT token.
-
-    Args:
-        token: JWT token from Authorization header
-        db: Async database session
-
-    Returns:
-        User model instance
-
-    Raises:
-        HTTPException: 401 if token is invalid or user not found
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -52,7 +41,7 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    # ?? FIX: Convert string to UUID before database query
+    # Convert string to UUID
     try:
         user_uuid = uuid.UUID(user_id)
     except ValueError:

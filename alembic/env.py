@@ -1,37 +1,57 @@
 ﻿import asyncio
-import os
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
-from alembic import context
+from logging.config import fileConfig
 import sys
 from pathlib import Path
 
-# Add the app directory to the path
-sys.path.append(str(Path(__file__).parent.parent))
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
-# REMOVE THIS LINE - it's causing the circular import
-# from app.core.database import engine  # DELETE THIS
+from alembic import context
 
-from app.models.base import Base
-from app.models import *
-
-# this is the Alembic Config object
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
 config = context.config
 
-# Get DATABASE_URL from environment or use default
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:root123@postgres:5432/spendwise_db")
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
-# Clean the URL in case it has "DATABASE_URL=" prefix
-if DATABASE_URL.startswith("DATABASE_URL="):
-    DATABASE_URL = DATABASE_URL.replace("DATABASE_URL=", "", 1)
+# --- ADD THESE LINES TO IMPORT YOUR MODELS ---
+# Add the parent directory to sys.path
+sys.path.append(str(Path(__file__).parent.parent))
 
-# Set the clean URL in config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+# Import your models
+from app.models.base import Base
+from app.models.income import IncomeSource
+from app.models.user import User
+from app.models.account import Account
+from app.models.category import Category
+# Import any other models you have
 
+# Set target_metadata to your Base's metadata
 target_metadata = Base.metadata
+# ---------------------------------------------
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+
 
 def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -43,13 +63,20 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
+
 def do_run_migrations(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
         context.run_migrations()
 
+
 async def run_async_migrations() -> None:
+    """In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -61,8 +88,12 @@ async def run_async_migrations() -> None:
 
     await connectable.dispose()
 
+
 def run_migrations_online() -> None:
+    """Run migrations in 'online' mode."""
+
     asyncio.run(run_async_migrations())
+
 
 if context.is_offline_mode():
     run_migrations_offline()

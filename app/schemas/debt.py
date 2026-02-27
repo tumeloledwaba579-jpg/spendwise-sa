@@ -1,4 +1,4 @@
-"""
+﻿"""
 Pydantic schemas for debt management.
 """
 from pydantic import BaseModel, Field, validator
@@ -44,7 +44,7 @@ class DebtAccountCreate(BaseModel):
         return v
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
 
 
@@ -61,7 +61,7 @@ class DebtAccountUpdate(BaseModel):
     notes: Optional[str] = Field(None)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
 
 
@@ -85,7 +85,7 @@ class DebtAccountInDB(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 
@@ -113,7 +113,7 @@ class DebtPaymentCreate(BaseModel):
         return v
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
 
 
@@ -130,7 +130,7 @@ class DebtPaymentInDB(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 
@@ -155,7 +155,7 @@ class DebtSnapshotOut(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 
@@ -190,7 +190,7 @@ class DebtStats(BaseModel):
     estimated_payoff_months: Optional[int]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PayoffStrategy(BaseModel):
@@ -203,4 +203,5 @@ class PayoffStrategy(BaseModel):
     potential_savings: Decimal
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+

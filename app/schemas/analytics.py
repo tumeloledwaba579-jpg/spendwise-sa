@@ -1,4 +1,4 @@
-"""Analytics and goal schemas."""
+﻿"""Analytics and goal schemas."""
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import date, datetime
@@ -29,7 +29,7 @@ class GoalInDB(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class MilestoneCreate(BaseModel):
@@ -49,7 +49,7 @@ class MilestoneInDB(BaseModel):
     completed_date: Optional[date]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class FinancialHealthScore(BaseModel):
@@ -60,3 +60,4 @@ class FinancialHealthScore(BaseModel):
     goal_achievement_score: Decimal
     spending_score: Decimal
     recommendations: List[str]
+

@@ -191,7 +191,243 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+/* Add to existing dashboard.css */
 
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.stats-col {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stats-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.stats-value {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.empty-state-small {
+  text-align: center;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  color: #666;
+}
+
+.retry-button {
+  background: #667eea;
+  color: rgb(255, 255, 255);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background 0.2s;
+}
+
+.retry-button:hover {
+  background: #5a67d8;
+}
+ 
+/* Add to existing dashboard.css */
+
+.stat-hint {
+  display: block;
+  font-size: 0.7rem;
+  color: #666;
+  font-weight: normal;
+  margin-top: 0.25rem;
+}
+
+.highlight-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  grid-column: span 2;
+}
+
+.highlight-card .stat-header h3,
+.highlight-card .stats-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.highlight-card .stats-value {
+  color: white;
+  font-weight: 700;
+}
+
+.highlight-card .stats-value.highlight {
+  font-size: 1.2rem;
+  color: #ffd700;
+}
+
+.highlight-card .stats-value.predicted {
+  color: #a0e7ff;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.stats-col {
+  flex: 1;
+  min-width: 100px;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stats-footer {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stats-label {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.stats-value {
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+.chart-container {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.chart-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.chart-empty-message {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.view-all-link {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.view-all-link:hover {
+  color: #5a67d8;
+  text-decoration: underline;
+}
+
+.empty-state-small {
+  text-align: center;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.empty-state-small p {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.empty-state-small .btn-primary {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.empty-state-small .btn-primary:hover {
+  background: #5a67d8;
+}
+
+.retry-button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background 0.2s;
+}
+
+.retry-button:hover {
+  background: #5a67d8;
+}
+
+.error-container {
+  text-align: center;
+  padding: 3rem;
+  background: #fff5f5;
+  border-radius: 12px;
+  margin: 2rem;
+  color: #c53030;
+}
+
+.error-container {
+  text-align: center;
+  padding: 3rem;
+  background: #fff5f5;
+  border-radius: 12px;
+  margin: 2rem;
+  color: #c53030;
+}
 .stat-icon {
   width: 48px;
   height: 48px;

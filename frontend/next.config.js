@@ -1,17 +1,20 @@
 ﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
+  reactStrictMode: false,
   images: {
-    domains: ['localhost', 'api'],
+    domains: ['localhost'],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: (process.env.NEXT_PUBLIC_API_URL || 'http://api:8000') + '/api/:path*',
-      },
-    ];
+  // Enable Turbopack optimizations
+  experimental: {
+    turbo: {
+      // Enable file system caching for faster restarts
+      memoryLimit: 4096,
+    },
+    optimizePackageImports: [
+      'recharts',
+      '@phosphor-icons/react',
+      'date-fns',
+    ],
   },
 };
 

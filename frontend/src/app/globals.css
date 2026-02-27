@@ -151,7 +151,7 @@ body {
 }
 
 .highlight-link::after {
-  content: '💰';
+  content: 'Ã°Å¸â€™Â°';
   font-size: 12px;
   position: absolute;
   top: -8px;
@@ -1916,4 +1916,13 @@ body {
     text-decoration: none;
     color: black;
   }
+}
+/* Force emoji fonts for all navigation and UI elements */
+.nav-link, .action-button, .btn-primary, .btn-secondary, .welcome-title, .section-title {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiOne Color', 'Twemoji Mozilla', 'system-ui', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif !important;
+}
+
+/* Specifically target the Budgets link */
+a[href*="budgets"], a[href*="income"], a[href*="expenses"] {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif !important;
 }

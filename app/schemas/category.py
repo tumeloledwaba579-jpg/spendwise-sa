@@ -1,4 +1,4 @@
-from uuid import UUID
+﻿from uuid import UUID
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional
@@ -63,7 +63,7 @@ class CategoryInDB(CategoryBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 
@@ -72,3 +72,4 @@ class Category(CategoryInDB):
 
 # Alias for compatibility
 CategoryOut = Category
+

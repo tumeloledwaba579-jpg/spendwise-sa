@@ -1,4 +1,4 @@
-from uuid import UUID
+﻿from uuid import UUID
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from decimal import Decimal
@@ -54,7 +54,7 @@ class AccountInDB(AccountBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 
@@ -63,3 +63,4 @@ class Account(AccountInDB):
 
 # Alias for compatibility
 AccountOut = Account
+

@@ -6,7 +6,7 @@ from typing import Optional
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.income import IncomeType, IncomeFrequency, TaxCategory
 
@@ -31,7 +31,8 @@ class IncomeSourceCreate(BaseModel):
     tax_rate: Optional[Decimal] = Field(None, ge=0, le=100)
     notes: Optional[str] = Field(None, max_length=1000)
 
-    @validator('type', pre=True)
+    @field_validator('type', mode='before')
+    @classmethod
     def validate_type(cls, v):
         """Validate and normalize income type."""
         if isinstance(v, str):
@@ -44,7 +45,8 @@ class IncomeSourceCreate(BaseModel):
             return v.value
         raise ValueError(f"Invalid type: {v}")
 
-    @validator('frequency', pre=True)
+    @field_validator('frequency', mode='before')
+    @classmethod
     def validate_frequency(cls, v):
         """Validate and normalize frequency."""
         if isinstance(v, str):
@@ -57,10 +59,11 @@ class IncomeSourceCreate(BaseModel):
             return v.value
         raise ValueError(f"Invalid frequency: {v}")
 
-    @validator('end_date', always=True)
-    def validate_dates(cls, v, values):
+    @field_validator('end_date')
+    @classmethod
+    def validate_dates(cls, v, info):
         """Ensure end_date >= start_date."""
-        if v and 'start_date' in values and v < values['start_date']:
+        if v and 'start_date' in info.data and v < info.data['start_date']:
             raise ValueError('end_date must be >= start_date')
         return v
 
@@ -68,6 +71,7 @@ class IncomeSourceCreate(BaseModel):
 class IncomeSourceUpdate(BaseModel):
     """Schema for updating an income source."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
+    type: Optional[str] = None  # ← ADD THIS LINE!
     frequency: Optional[str] = None
     amount: Optional[Decimal] = Field(None, gt=0)
     currency: Optional[str] = Field(None, min_length=3, max_length=3)
@@ -80,7 +84,8 @@ class IncomeSourceUpdate(BaseModel):
     notes: Optional[str] = Field(None, max_length=1000)
     is_active: Optional[bool] = None
 
-    @validator('frequency', pre=True)
+    @field_validator('frequency', mode='before')
+    @classmethod
     def validate_frequency(cls, v):
         """Validate frequency if provided."""
         if v is None:
@@ -94,6 +99,23 @@ class IncomeSourceUpdate(BaseModel):
         if hasattr(v, 'value'):
             return v.value
         raise ValueError(f"Invalid frequency: {v}")
+    
+    # Also add validator for type if you want
+    @field_validator('type', mode='before')
+    @classmethod
+    def validate_type(cls, v):
+        """Validate type if provided."""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            v = v.upper()
+            valid_types = ['SALARY', 'FREELANCE', 'INVESTMENT', 'PASSIVE', 'CUSTOM', 'OTHER']
+            if v not in valid_types:
+                raise ValueError(f"Invalid type: {v}. Must be one of {valid_types}")
+            return v
+        if hasattr(v, 'value'):
+            return v.value
+        raise ValueError(f"Invalid type: {v}")
 
 
 class IncomeSourceInDB(IncomeSourceCreate):
@@ -104,10 +126,11 @@ class IncomeSourceInDB(IncomeSourceCreate):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
-        extra = 'forbid'
+    model_config = {
+        "from_attributes": True,  # Replaces orm_mode = True
+        "use_enum_values": True,
+        "extra": "forbid"
+    }
 
 
 # ============================================================================
@@ -124,10 +147,11 @@ class IncomeHistoryCreate(BaseModel):
     notes: Optional[str] = Field(None, max_length=1000)
     is_manual_entry: bool = Field(default=True)
 
-    @validator('tax_amount', always=True)
-    def validate_tax(cls, v, values):
+    @field_validator('tax_amount')
+    @classmethod
+    def validate_tax(cls, v, info):
         """Ensure tax_amount <= amount."""
-        if v and 'amount' in values and v > values['amount']:
+        if v and 'amount' in info.data and v > info.data['amount']:
             raise ValueError('tax_amount cannot be greater than amount')
         return v
 
@@ -140,10 +164,11 @@ class IncomeHistoryInDB(IncomeHistoryCreate):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
-        extra = 'forbid'
+    model_config = {
+        "from_attributes": True,  # Replaces orm_mode = True
+        "use_enum_values": True,
+        "extra": "forbid"
+    }
 
 
 # ============================================================================
@@ -166,10 +191,11 @@ class IncomeMonthlySummaryOut(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
-        extra = 'forbid'
+    model_config = {
+        "from_attributes": True,  # Replaces orm_mode = True
+        "use_enum_values": True,
+        "extra": "forbid"
+    }
 
 
 # ============================================================================
@@ -202,4 +228,3 @@ class IncomeStats(BaseModel):
     one_time_income_count: int
     top_source_name: Optional[str] = None
     top_source_amount: Optional[Decimal] = None
-

@@ -1,4 +1,4 @@
-"""
+﻿"""
 User Pydantic schemas for profile updates (not authentication).
 Note: Authentication schemas are in auth.py.
 """
@@ -28,7 +28,7 @@ class UserProfileOut(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
 
@@ -42,6 +42,7 @@ class UserStatsOut(BaseModel):
     last_login: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True
         extra = 'forbid'
+

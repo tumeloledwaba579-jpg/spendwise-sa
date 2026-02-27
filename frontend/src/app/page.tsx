@@ -1,44 +1,44 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext'; // Add this import
+import { useAuth } from '@/contexts/AuthContext';
 import './globals.css';
 
 // Data arrays
 const features = [
   {
-    icon: '📊',
+    icon: 'ðŸ“Š',
     title: 'Smart Budgeting',
     description: 'AI-powered budgets that adapt to your spending habits and help you save more.',
     link: '/features/budgeting'
   },
   {
-    icon: '🎯',
+    icon: 'ðŸŽ¯',
     title: 'Goal Tracking',
     description: 'Set and track financial goals - from emergency funds to that dream holiday.',
     link: '/features/goals'
   },
   {
-    icon: '📈',
+    icon: 'ðŸ“ˆ',
     title: 'Investment Insights',
     description: 'Get personalized investment recommendations based on your risk profile.',
     link: '/features/investments'
   },
   {
-    icon: '💳',
+    icon: 'ðŸ’³',
     title: 'Debt Management',
     description: 'Smart debt payoff strategies that save you thousands in interest.',
     link: '/features/debt'
   },
   {
-    icon: '🏠',
+    icon: 'ðŸ ',
     title: 'Net Worth Tracker',
     description: 'Track your complete financial picture including assets and liabilities.',
     link: '/features/net-worth'
   },
   {
-    icon: '🔒',
+    icon: 'ðŸ”’',
     title: 'Bank-Grade Security',
     description: 'Your data is encrypted and protected with enterprise-level security.',
     link: '/features/security'
@@ -89,7 +89,7 @@ const testimonials = [
 
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
-  const { user, isLoading: authLoading } = useAuth(); // Get auth state
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,10 +102,11 @@ export default function HomePage() {
   return (
     <div className="landing-page">
       {/* Navigation */}
-      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+      <nav className={
+avbar }>
         <div className="nav-container">
           <Link href="/" className="logo">
-            <span className="logo-icon">💰</span>
+            <span className="logo-icon">ðŸ’°</span>
             SpendWise<span className="logo-accent">SA</span>
           </Link>
           
@@ -114,15 +115,13 @@ export default function HomePage() {
             <Link href="#how-it-works">How It Works</Link>
             <Link href="#pricing">Pricing</Link>
             
-            {/* UPDATED: Conditional navigation based on auth state */}
             {!authLoading && user ? (
               <>
-                {/* Show dashboard links when user is logged in */}
                 <Link href="/dashboard" className="nav-link">
-                  📊 Dashboard
+                  ðŸ“Š Dashboard
                 </Link>
                 <Link href="/dashboard/income" className="nav-link highlight-link">
-                  💵 Income
+                  ðŸ’µ Income
                 </Link>
                 <div className="user-menu">
                   <span className="user-email-small">
@@ -135,7 +134,6 @@ export default function HomePage() {
               </>
             ) : (
               <>
-                {/* Show login/signup when user is logged out */}
                 <Link href="/login" className="nav-link">Sign In</Link>
                 <Link href="/register" className="nav-button">
                   Get Started Free
@@ -165,7 +163,6 @@ export default function HomePage() {
           </p>
           <div className="hero-cta">
             {!authLoading && user ? (
-              // Show dashboard button when logged in
               <>
                 <Link href="/dashboard" className="cta-primary">
                   Go to Dashboard
@@ -181,7 +178,6 @@ export default function HomePage() {
                 </Link>
               </>
             ) : (
-              // Show signup button when logged out
               <>
                 <Link href="/register" className="cta-primary">
                   Start Free Trial
@@ -211,7 +207,7 @@ export default function HomePage() {
             </div>
             <div className="stat-divider"></div>
             <div className="stat-item">
-              <div className="stat-number">4.9★</div>
+              <div className="stat-number">4.9â˜…</div>
               <div className="stat-label">User Rating</div>
             </div>
           </div>
@@ -235,10 +231,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Rest of your sections remain exactly the same... */}
       {/* Features Section */}
       <section id="features" className="features">
-        {/* ... keep all your existing features section code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Everything You Need to 
@@ -271,7 +265,6 @@ export default function HomePage() {
 
       {/* How It Works */}
       <section id="how-it-works" className="how-it-works">
-        {/* ... keep all your existing how it works code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Get Started in 
@@ -304,7 +297,6 @@ export default function HomePage() {
 
       {/* Pricing */}
       <section id="pricing" className="pricing">
-        {/* ... keep all your existing pricing code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Simple, Transparent
@@ -325,10 +317,10 @@ export default function HomePage() {
               </div>
             </div>
             <ul className="pricing-features">
-              <li>✓ Basic expense tracking</li>
-              <li>✓ Monthly reports</li>
-              <li>✓ 3 budget categories</li>
-              <li>✓ 30-day transaction history</li>
+              <li>âœ“ Basic expense tracking</li>
+              <li>âœ“ Monthly reports</li>
+              <li>âœ“ 3 budget categories</li>
+              <li>âœ“ 30-day transaction history</li>
             </ul>
             <Link href="/register" className="pricing-button">
               Get Started
@@ -345,12 +337,12 @@ export default function HomePage() {
               </div>
             </div>
             <ul className="pricing-features">
-              <li>✓ Everything in Free</li>
-              <li>✓ AI-powered insights</li>
-              <li>✓ Unlimited budgets</li>
-              <li>✓ 5-year transaction history</li>
-              <li>✓ Priority support</li>
-              <li>✓ Export to PDF/Excel</li>
+              <li>âœ“ Everything in Free</li>
+              <li>âœ“ AI-powered insights</li>
+              <li>âœ“ Unlimited budgets</li>
+              <li>âœ“ 5-year transaction history</li>
+              <li>âœ“ Priority support</li>
+              <li>âœ“ Export to PDF/Excel</li>
             </ul>
             <Link href="/register" className="pricing-button pro">
               Start Free Trial
@@ -366,11 +358,11 @@ export default function HomePage() {
               </div>
             </div>
             <ul className="pricing-features">
-              <li>✓ Everything in Pro</li>
-              <li>✓ Up to 5 members</li>
-              <li>✓ Shared budgets</li>
-              <li>✓ Family goals</li>
-              <li>✓ Parental controls</li>
+              <li>âœ“ Everything in Pro</li>
+              <li>âœ“ Up to 5 members</li>
+              <li>âœ“ Shared budgets</li>
+              <li>âœ“ Family goals</li>
+              <li>âœ“ Parental controls</li>
             </ul>
             <Link href="/register" className="pricing-button">
               Start Free Trial
@@ -381,7 +373,6 @@ export default function HomePage() {
 
       {/* Testimonials */}
       <section className="testimonials">
-        {/* ... keep all your existing testimonials code ... */}
         <div className="section-header">
           <h2 className="section-title">
             Loved by 
@@ -396,8 +387,8 @@ export default function HomePage() {
           {testimonials.map((testimonial, index) => (
             <div key={index} className="testimonial-card">
               <div className="testimonial-rating">
-                {'★'.repeat(testimonial.rating)}
-                {'☆'.repeat(5 - testimonial.rating)}
+                {'â˜…'.repeat(testimonial.rating)}
+                {'â˜†'.repeat(5 - testimonial.rating)}
               </div>
               <p className="testimonial-quote">"{testimonial.quote}"</p>
               <div className="testimonial-author">
@@ -453,28 +444,27 @@ export default function HomePage() {
             )}
           </div>
           {!user && (
-            <p className="cta-note">No credit card required • 14-day free trial • Cancel anytime</p>
+            <p className="cta-note">No credit card required â€¢ 14-day free trial â€¢ Cancel anytime</p>
           )}
         </div>
       </section>
 
       {/* Footer */}
       <footer className="footer">
-        {/* ... keep all your existing footer code ... */}
         <div className="footer-content">
           <div className="footer-section">
             <Link href="/" className="footer-logo">
-              <span className="logo-icon">💰</span>
+              <span className="logo-icon">ðŸ’°</span>
               SpendWise<span className="logo-accent">SA</span>
             </Link>
             <p className="footer-description">
               Making financial management simple and effective for South Africans since 2024.
             </p>
             <div className="social-links">
-              <a href="#" className="social-link">📱</a>
-              <a href="#" className="social-link">💬</a>
-              <a href="#" className="social-link">📘</a>
-              <a href="#" className="social-link">🐦</a>
+              <a href="#" className="social-link">ðŸ“±</a>
+              <a href="#" className="social-link">ðŸ’¬</a>
+              <a href="#" className="social-link">ðŸ“˜</a>
+              <a href="#" className="social-link">ðŸ¦</a>
             </div>
           </div>
 
@@ -510,7 +500,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} SpendWise SA. All rights reserved.</p>
+          <p>Â© {new Date().getFullYear()} SpendWise SA. All rights reserved.</p>
           <div className="footer-bottom-links">
             <Link href="/privacy">Privacy Policy</Link>
             <Link href="/terms">Terms of Service</Link>

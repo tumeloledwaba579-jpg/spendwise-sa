@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ interface IncomeSource {
   is_taxable: boolean;
   is_active: boolean;
   created_at: string;
+  tax_rate?: number | null;
 }
 
 interface IncomeHistory {
@@ -62,10 +63,52 @@ export default function IncomePage() {
   const [incomeStats, setIncomeStats] = useState<IncomeStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modal states
   const [showAddSourceModal, setShowAddSourceModal] = useState(false);
   const [showRecordIncomeModal, setShowRecordIncomeModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [sourceToDelete, setSourceToDelete] = useState<string | null>(null);
+  const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
+
+  // Form states
+  const [newSource, setNewSource] = useState({
+    name: '',
+    type: 'SALARY',
+    frequency: 'MONTHLY',
+    amount: '',
+    is_recurring: true,
+    is_taxable: true,
+    auto_tax_calculation: false,
+    tax_rate: '',
+    start_date: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
+
+  const [newIncome, setNewIncome] = useState({
+    income_source_id: '',
+    amount: '',
+    received_date: new Date().toISOString().split('T')[0],
+    tax_amount: '',
+    notes: ''
+  });
+
+  // Helper function to reset source form
+  const resetSourceForm = () => {
+    setNewSource({
+      name: '',
+      type: 'SALARY',
+      frequency: 'MONTHLY',
+      amount: '',
+      is_recurring: true,
+      is_taxable: true,
+      auto_tax_calculation: false,
+      tax_rate: '',
+      start_date: new Date().toISOString().split('T')[0],
+      notes: ''
+    });
+  };
 
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -80,96 +123,288 @@ export default function IncomePage() {
   }, [user, authLoading, router]);
 
   const fetchAllIncomeData = async () => {
+    console.log('API URL from env:', process.env.NEXT_PUBLIC_API_URL);
+    console.log('Full URL being called:', `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources?active_only=true`);
     setIsLoading(true);
     setError(null);
-    
-    // Mock data for now - replace with actual API calls
-    setTimeout(() => {
-      const mockSources: IncomeSource[] = [
-        {
-          id: '1',
-          name: 'Primary Salary',
-          type: 'SALARY',
-          frequency: 'MONTHLY',
-          amount: 25000,
-          is_recurring: true,
-          is_taxable: true,
-          is_active: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          name: 'Freelance Work',
-          type: 'FREELANCE',
-          frequency: 'WEEKLY',
-          amount: 8000,
-          is_recurring: false,
-          is_taxable: true,
-          is_active: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '3',
-          name: 'Investment Dividends',
-          type: 'INVESTMENT',
-          frequency: 'QUARTERLY',
-          amount: 3000,
-          is_recurring: true,
-          is_taxable: true,
-          is_active: true,
-          created_at: new Date().toISOString()
-        }
-      ];
+  
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
 
-      const mockHistory: IncomeHistory[] = [
-        {
-          id: '1',
-          income_source_id: '1',
-          amount: 25000,
-          tax_amount: 5000,
-          received_date: new Date().toISOString(),
-          is_manual_entry: false,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          income_source_id: '2',
-          amount: 8000,
-          tax_amount: 1600,
-          received_date: new Date(Date.now() - 86400000).toISOString(),
-          is_manual_entry: true,
-          created_at: new Date().toISOString()
-        }
-      ];
-
-      const mockSummary: MonthlySummary = {
-        year: 2026,
-        month: 2,
-        total_income: 33000,
-        total_tax: 6600,
-        net_income: 26400,
-        recurring_income: 25000,
-        one_time_income: 8000
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       };
 
-      const mockStats: IncomeStats = {
-        total_annual_income: 396000,
-        average_monthly_income: 33000,
-        predicted_next_month: 33000,
-        total_tax_paid: 79200,
-        net_annual_income: 316800,
-        recurring_income_count: 2,
-        one_time_income_count: 1,
-        top_source_name: 'Primary Salary',
-        top_source_amount: 25000
-      };
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
 
-      setIncomeSources(mockSources);
-      setIncomeHistory(mockHistory);
-      setMonthlySummary(mockSummary);
-      setIncomeStats(mockStats);
+      // Fetch all data in parallel from your REAL backend
+      const [sourcesRes, historyRes, summaryRes, statsRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources?active_only=true`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/history?limit=50`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/summary/${currentYear}/${currentMonth}`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/stats?year=${currentYear}`, { headers })
+      ]);
+
+      // Check responses
+      if (!sourcesRes.ok) {
+        throw new Error(`Failed to fetch sources: ${sourcesRes.status}`);
+      }
+
+      // Parse JSON
+      const sources = await sourcesRes.json();
+      setIncomeSources(sources);
+
+      // Handle history (might be empty)
+      if (historyRes.ok) {
+        const history = await historyRes.json();
+        setIncomeHistory(history);
+      }
+
+      // Handle summary (might be 404 if no data for this month)
+      if (summaryRes.ok) {
+        const summary = await summaryRes.json();
+        setMonthlySummary(summary);
+      } else {
+        // Create empty summary if none exists
+        setMonthlySummary({
+          year: currentYear,
+          month: currentMonth,
+          total_income: 0,
+          total_tax: 0,
+          net_income: 0,
+          recurring_income: 0,
+          one_time_income: 0
+        });
+      }
+
+      // Handle stats
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        setIncomeStats(stats);
+      }
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
+  };
+
+  const handleAddIncomeSource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...newSource,
+          amount: parseFloat(newSource.amount),
+          tax_rate: newSource.tax_rate ? parseFloat(newSource.tax_rate) : null
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to add income source');
+      }
+
+      const addedSource = await response.json();
+      setIncomeSources([...incomeSources, addedSource]);
+      setShowAddSourceModal(false);
+      setEditingSource(null);
+      resetSourceForm();
+
+    } catch (err) {
+      console.error('Error adding source:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add source');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRecordIncome = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/history`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...newIncome,
+          amount: parseFloat(newIncome.amount),
+          tax_amount: newIncome.tax_amount ? parseFloat(newIncome.tax_amount) : null,
+          is_manual_entry: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to record income');
+      }
+
+      const recordedIncome = await response.json();
+      setIncomeHistory([recordedIncome, ...incomeHistory]);
+      setShowRecordIncomeModal(false);
+      
+      // Refresh summary and stats
+      fetchAllIncomeData();
+      
+      // Reset form
+      setNewIncome({
+        income_source_id: '',
+        amount: '',
+        received_date: new Date().toISOString().split('T')[0],
+        tax_amount: '',
+        notes: ''
+      });
+
+    } catch (err) {
+      console.error('Error recording income:', err);
+      setError(err instanceof Error ? err.message : 'Failed to record income');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateIncomeSource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSource) return;
+    
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      // Prepare the update data - only include fields that exist in your backend
+      const updateData: any = {
+        name: newSource.name,
+        type: newSource.type,
+        frequency: newSource.frequency,
+        amount: parseFloat(newSource.amount),
+        is_recurring: newSource.is_recurring,
+        is_taxable: newSource.is_taxable,
+      };
+
+      // Only add tax_rate if auto_tax_calculation is true and tax_rate has a value
+      if (newSource.auto_tax_calculation && newSource.tax_rate) {
+        updateData.tax_rate = parseFloat(newSource.tax_rate);
+        updateData.auto_tax_calculation = true;
+      } else {
+        updateData.tax_rate = null;
+        updateData.auto_tax_calculation = false;
+      }
+
+      // Add notes if your backend supports it
+      if (newSource.notes) {
+        updateData.notes = newSource.notes;
+      }
+
+      console.log('🔵 Sending update data:', updateData); // Debug log
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/${editingSource.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updateData)
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('🔴 Update error response:', errorData);
+        throw new Error(errorData.detail || 'Failed to update income source');
+      }
+
+      const updatedSource = await response.json();
+      console.log('🟢 Update successful:', updatedSource);
+      
+      // Find the original source in the list for comparison
+      const originalSource = incomeSources.find(s => s.id === editingSource.id);
+      console.log('📝 Original source:', originalSource);
+      console.log('📝 Updated source from API:', updatedSource);
+      
+      // Check if they're different
+      if (JSON.stringify(originalSource) !== JSON.stringify(updatedSource)) {
+        console.log('✅ Source was updated successfully');
+      } else {
+        console.log('⚠️ Source did not change - check if backend is processing the update');
+      }
+      
+      // Update the source in the list
+      setIncomeSources(incomeSources.map(s => 
+        s.id === updatedSource.id ? updatedSource : s
+      ));
+      
+      // Close modal and reset
+      setShowAddSourceModal(false);
+      setEditingSource(null);
+      resetSourceForm();
+
+    } catch (err) {
+      console.error('🔴 Error updating source:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update source');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteSource = async () => {
+    if (!sourceToDelete) return;
+    
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/${sourceToDelete}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to delete source');
+      }
+
+      setIncomeSources(incomeSources.filter(s => s.id !== sourceToDelete));
+      setShowDeleteConfirmModal(false);
+      setSourceToDelete(null);
+
+    } catch (err) {
+      console.error('Error deleting source:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete source');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
@@ -312,7 +547,11 @@ export default function IncomePage() {
             <div className="header-actions">
               <button 
                 className="btn-primary"
-                onClick={() => setShowAddSourceModal(true)}
+                onClick={() => {
+                  setEditingSource(null);
+                  resetSourceForm();
+                  setShowAddSourceModal(true);
+                }}
               >
                 + Add Income Source
               </button>
@@ -338,7 +577,7 @@ export default function IncomePage() {
                 {formatCurrency(monthlySummary.total_income)}
               </div>
               <div className="stat-info">
-                <span>This month (Feb 2026)</span>
+                <span>{new Date(monthlySummary.year, monthlySummary.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
               </div>
             </div>
 
@@ -394,7 +633,11 @@ export default function IncomePage() {
               <p>Add your first income source to start tracking your earnings.</p>
               <button 
                 className="btn-primary"
-                onClick={() => setShowAddSourceModal(true)}
+                onClick={() => {
+                  setEditingSource(null);
+                  resetSourceForm();
+                  setShowAddSourceModal(true);
+                }}
               >
                 + Add Income Source
               </button>
@@ -430,11 +673,57 @@ export default function IncomePage() {
                         {source.is_taxable ? '✅ Yes' : '❌ No'}
                       </span>
                     </div>
+                    {source.tax_rate && source.tax_rate > 0 && (
+                      <div className="detail-item">
+                        <span className="detail-label">Tax Rate:</span>
+                        <span className="detail-value">{source.tax_rate}%</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="source-actions">
-                    <button className="btn-edit">✏️ Edit</button>
-                    <button className="btn-delete">🗑️ Delete</button>
+                    <button 
+                      className="btn-edit"
+                      onClick={() => {
+                        console.log('📝 Editing source:', source);
+                        
+                        setEditingSource(source);
+                        
+                        // Check if tax_rate exists to determine auto_tax_calculation
+                        const hasTaxRate = source.tax_rate !== null && 
+                                         source.tax_rate !== undefined && 
+                                         source.tax_rate > 0;
+                        
+                        const newSourceData = {
+                          name: source.name,
+                          type: source.type,
+                          frequency: source.frequency,
+                          amount: source.amount.toString(),
+                          is_recurring: source.is_recurring,
+                          is_taxable: source.is_taxable,
+                          auto_tax_calculation: hasTaxRate,
+                          tax_rate: source.tax_rate ? source.tax_rate.toString() : '',
+                          start_date: new Date().toISOString().split('T')[0],
+                          notes: ''
+                        };
+                        
+                        console.log('📝 Setting form data:', newSourceData);
+                        setNewSource(newSourceData);
+                        setShowAddSourceModal(true);
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    
+                    <button 
+                      className="btn-delete"
+                      onClick={() => {
+                        setSourceToDelete(source.id);
+                        setShowDeleteConfirmModal(true);
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
                   </div>
                 </div>
               ))}
@@ -498,7 +787,7 @@ export default function IncomePage() {
         {/* Annual Statistics Section */}
         {incomeStats && (
           <section className="income-stats-section fade-in">
-            <h2 className="section-title">Annual Statistics (2026)</h2>
+            <h2 className="section-title">Annual Statistics ({new Date().getFullYear()})</h2>
             
             <div className="stats-overview">
               <div className="stat-box">
@@ -563,7 +852,11 @@ export default function IncomePage() {
             </Link>
 
             <button 
-              onClick={() => setShowAddSourceModal(true)} 
+              onClick={() => {
+                setEditingSource(null);
+                resetSourceForm();
+                setShowAddSourceModal(true);
+              }} 
               className="action-button"
             >
               <div className="action-icon">➕</div>
@@ -595,23 +888,341 @@ export default function IncomePage() {
         <p>Making financial management simple and effective for South Africans.</p>
       </footer>
 
-      {/* Modals - Placeholders */}
+      {/* Add Income Source Modal */}
       {showAddSourceModal && (
-        <div className="modal-overlay" onClick={() => setShowAddSourceModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Add Income Source</h2>
-            <p>Modal component will be built next...</p>
-            <button onClick={() => setShowAddSourceModal(false)}>Close</button>
+        <div className="modal-overlay" onClick={() => {
+          setShowAddSourceModal(false);
+          setEditingSource(null);
+          resetSourceForm();
+        }}>
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingSource ? 'Edit Income Source' : 'Add New Income Source'}</h2>
+              <button className="modal-close" onClick={() => {
+                setShowAddSourceModal(false);
+                setEditingSource(null);
+                resetSourceForm();
+              }}>×</button>
+            </div>
+            
+            <form onSubmit={editingSource ? handleUpdateIncomeSource : handleAddIncomeSource}>
+              <div className="form-grid">
+                <div className="form-group full-width">
+                  <label htmlFor="sourceName">Source Name *</label>
+                  <input
+                    id="sourceName"
+                    type="text"
+                    value={newSource.name}
+                    onChange={(e) => setNewSource({...newSource, name: e.target.value})}
+                    placeholder="e.g., Primary Salary, Freelance Work"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="sourceType">Income Type *</label>
+                  <select
+                    id="sourceType"
+                    value={newSource.type}
+                    onChange={(e) => setNewSource({...newSource, type: e.target.value})}
+                    required
+                  >
+                    <option value="SALARY">Salary</option>
+                    <option value="FREELANCE">Freelance</option>
+                    <option value="INVESTMENT">Investment</option>
+                    <option value="PASSIVE">Passive Income</option>
+                    <option value="CUSTOM">Custom</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="frequency">Frequency *</label>
+                  <select
+                    id="frequency"
+                    value={newSource.frequency}
+                    onChange={(e) => setNewSource({...newSource, frequency: e.target.value})}
+                    required
+                  >
+                    <option value="DAILY">Daily</option>
+                    <option value="WEEKLY">Weekly</option>
+                    <option value="BIWEEKLY">Bi-weekly</option>
+                    <option value="MONTHLY">Monthly</option>
+                    <option value="QUARTERLY">Quarterly</option>
+                    <option value="YEARLY">Yearly</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="amount">Amount (ZAR) *</label>
+                  <input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newSource.amount}
+                    onChange={(e) => setNewSource({...newSource, amount: e.target.value})}
+                    placeholder="25000.00"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="startDate">Start Date *</label>
+                  <input
+                    id="startDate"
+                    type="date"
+                    value={newSource.start_date}
+                    onChange={(e) => setNewSource({...newSource, start_date: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={newSource.is_recurring}
+                      onChange={(e) => setNewSource({...newSource, is_recurring: e.target.checked})}
+                    />
+                    Recurring Income
+                  </label>
+                </div>
+
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={newSource.is_taxable}
+                      onChange={(e) => setNewSource({...newSource, is_taxable: e.target.checked})}
+                    />
+                    Taxable
+                  </label>
+                </div>
+
+                {newSource.is_taxable && (
+                  <>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={newSource.auto_tax_calculation}
+                          onChange={(e) => setNewSource({...newSource, auto_tax_calculation: e.target.checked})}
+                        />
+                        Auto-calculate Tax
+                      </label>
+                    </div>
+
+                    {newSource.auto_tax_calculation && (
+                      <div className="form-group">
+                        <label htmlFor="taxRate">Tax Rate (%)</label>
+                        <input
+                          id="taxRate"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={newSource.tax_rate}
+                          onChange={(e) => setNewSource({...newSource, tax_rate: e.target.value})}
+                          placeholder="25.00"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className="form-group full-width">
+                  <label htmlFor="notes">Notes (Optional)</label>
+                  <textarea
+                    id="notes"
+                    value={newSource.notes}
+                    onChange={(e) => setNewSource({...newSource, notes: e.target.value})}
+                    placeholder="Any additional details about this income source"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowAddSourceModal(false);
+                    setEditingSource(null);
+                    resetSourceForm();
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Saving...' : editingSource ? 'Update Source' : 'Add Source'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
+      {/* Record Income Modal */}
       {showRecordIncomeModal && (
-        <div className="modal-overlay" onClick={() => setShowRecordIncomeModal(false)}>
+        <div className="modal-overlay" onClick={() => {
+          setShowRecordIncomeModal(false);
+          setNewIncome({
+            income_source_id: '',
+            amount: '',
+            received_date: new Date().toISOString().split('T')[0],
+            tax_amount: '',
+            notes: ''
+          });
+        }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Record Income</h2>
-            <p>Modal component will be built next...</p>
-            <button onClick={() => setShowRecordIncomeModal(false)}>Close</button>
+            <div className="modal-header">
+              <h2>Record Income Received</h2>
+              <button className="modal-close" onClick={() => {
+                setShowRecordIncomeModal(false);
+                setNewIncome({
+                  income_source_id: '',
+                  amount: '',
+                  received_date: new Date().toISOString().split('T')[0],
+                  tax_amount: '',
+                  notes: ''
+                });
+              }}>×</button>
+            </div>
+            
+            <form onSubmit={handleRecordIncome}>
+              <div className="form-group">
+                <label htmlFor="incomeSource">Income Source *</label>
+                <select
+                  id="incomeSource"
+                  value={newIncome.income_source_id}
+                  onChange={(e) => setNewIncome({...newIncome, income_source_id: e.target.value})}
+                  required
+                >
+                  <option value="">Select a source</option>
+                  {incomeSources.map(source => (
+                    <option key={source.id} value={source.id}>
+                      {source.name} ({formatCurrency(source.amount)}/{getFrequencyLabel(source.frequency).toLowerCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="receivedDate">Received Date *</label>
+                <input
+                  id="receivedDate"
+                  type="date"
+                  value={newIncome.received_date}
+                  onChange={(e) => setNewIncome({...newIncome, received_date: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="incomeAmount">Amount Received (ZAR) *</label>
+                <input
+                  id="incomeAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newIncome.amount}
+                  onChange={(e) => setNewIncome({...newIncome, amount: e.target.value})}
+                  placeholder="25000.00"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="taxAmount">Tax Amount (ZAR) (Optional)</label>
+                <input
+                  id="taxAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newIncome.tax_amount}
+                  onChange={(e) => setNewIncome({...newIncome, tax_amount: e.target.value})}
+                  placeholder="5000.00"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="incomeNotes">Notes (Optional)</label>
+                <textarea
+                  id="incomeNotes"
+                  value={newIncome.notes}
+                  onChange={(e) => setNewIncome({...newIncome, notes: e.target.value})}
+                  placeholder="Any additional details about this income"
+                  rows={3}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowRecordIncomeModal(false);
+                    setNewIncome({
+                      income_source_id: '',
+                      amount: '',
+                      received_date: new Date().toISOString().split('T')[0],
+                      tax_amount: '',
+                      notes: ''
+                    });
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Recording...' : 'Record Income'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteConfirmModal(false)}>
+          <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirm Delete</h2>
+              <button className="modal-close" onClick={() => setShowDeleteConfirmModal(false)}>×</button>
+            </div>
+            
+            <div className="delete-confirm-content">
+              <p>Are you sure you want to delete this income source?</p>
+              <p className="warning-text">This action cannot be undone and will affect historical data.</p>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                type="button" 
+                className="btn-secondary"
+                onClick={() => setShowDeleteConfirmModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="btn-danger"
+                onClick={handleDeleteSource}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete Source'}
+              </button>
+            </div>
           </div>
         </div>
       )}

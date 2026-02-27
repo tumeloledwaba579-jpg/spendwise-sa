@@ -1,4 +1,4 @@
-"""
+﻿"""
 Debt management API endpoints.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -195,5 +195,6 @@ async def calculate_payoff_strategy(
 async def health_check():
     """Health check endpoint for debt module."""
     return {"status": "healthy", "module": "debt"}
+
 
 

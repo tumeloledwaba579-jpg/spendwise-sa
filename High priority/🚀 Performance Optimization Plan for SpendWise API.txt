@@ -1,0 +1,372 @@
+# 🚀 **Performance Optimization Plan for SpendWise API**
+
+Based on the performance test results, here's a comprehensive plan to optimize your API:
+
+## 📊 **Current Performance Baseline**
+
+| Endpoint | Current Avg | Target | Priority |
+|----------|-------------|--------|----------|
+| **Login** | 376ms | <100ms | 🔴 HIGH |
+| **Create Expense** | 32ms | <20ms | 🟡 MEDIUM |
+| **All Other Endpoints** | 8-18ms | <15ms | 🟢 LOW |
+
+---
+
+## 🔴 **PHASE 1: Optimize Login (Highest Priority)**
+
+### **Issue Analysis**
+Login is slow because it:
+1. Hashes the password (bcrypt)
+2. Queries the database for the user
+3. Creates JWT tokens
+4. Sets cookies
+
+### **Solutions**
+
+#### **1.1 Add Database Index on Email** (5 minutes)
+```sql
+-- Run this migration
+CREATE INDEX idx_users_email ON users(email);
+```
+**Expected improvement**: 50-100ms faster
+
+#### **1.2 Implement Redis Session Caching** (2 hours)
+```python
+# app/services/cache_service.py - Add this method
+@classmethod
+async def cache_user_session(cls, user_id: str, session_data: dict, ttl: int = 3600):
+    """Cache user session data"""
+    if cls._redis_client:
+        key = f"user_session:{user_id}"
+        await cls._redis_client.setex(key, ttl, json.dumps(session_data))
+
+@classmethod
+async def get_cached_user(cls, user_id: str):
+    """Get cached user data"""
+    if cls._redis_client:
+        key = f"user_session:{user_id}"
+        data = await cls._redis_client.get(key)
+        return json.loads(data) if data else None
+```
+
+#### **1.3 Optimize Password Hashing**
+```python
+# app/core/security.py - Reduce bcrypt rounds for better performance
+# Current (likely 12 rounds)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Optimized (12 rounds is good, but ensure it's not higher)
+# You can check current rounds:
+print(f"Current bcrypt rounds: {pwd_context.bcrypt__rounds}")
+```
+**Note**: Don't go below 10 rounds for security
+
+#### **1.4 Add Login Attempt Tracking with Redis**
+```python
+# app/api/v1/endpoints/auth.py - Optimized login
+@router.post("/login")
+async def login(login_data: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
+    # Check Redis for failed attempts
+    attempts_key = f"login_attempts:{login_data.email}"
+    attempts = await redis.get(attempts_key)
+    
+    if attempts and int(attempts) > 5:
+        raise HTTPException(429, "Too many attempts. Try again later.")
+    
+    # Query with index (fast)
+    result = await db.execute(
+        select(User).where(User.email == login_data.email)
+    )
+    user = result.scalars().first()
+    
+    # Verify password (this is the slow part)
+    if not user or not verify_password(login_data.password, user.hashed_password):
+        await redis.incr(attempts_key)
+        await redis.expire(attempts_key, 900)  # 15 minutes
+        raise HTTPException(401, "Invalid credentials")
+    
+    # Clear attempts on success
+    await redis.delete(attempts_key)
+    
+    # Create session
+    # ... rest of login logic
+```
+
+---
+
+## 🟡 **PHASE 2: General API Optimizations**
+
+### **2.1 Add Database Indexes for All Foreign Keys**
+
+Create a migration script:
+
+```sql
+-- Create indexes for all foreign keys and frequently queried fields
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_account_id ON transactions(account_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_category_id ON transactions(category_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_income_sources_user_id ON income_sources(user_id);
+CREATE INDEX IF NOT EXISTS idx_income_history_user_id ON income_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_income_history_date ON income_history(received_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id);
+```
+
+### **2.2 Implement Redis Caching for Read-Heavy Endpoints**
+
+Create a caching service:
+
+```python
+# app/services/cache_service.py - Enhanced version
+import json
+from typing import Optional, Any
+import redis.asyncio as redis
+from app.core.config import settings
+
+class CacheService:
+    _redis_client = None
+    
+    @classmethod
+    async def get_redis(cls):
+        if not cls._redis_client:
+            cls._redis_client = await redis.from_url(
+                f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
+                decode_responses=True
+            )
+        return cls._redis_client
+    
+    @classmethod
+    async def get_or_compute(cls, key: str, ttl: int, compute_func):
+        """Get from cache or compute and cache"""
+        redis = await cls.get_redis()
+        
+        # Try cache first
+        cached = await redis.get(key)
+        if cached:
+            return json.loads(cached)
+        
+        # Compute and cache
+        result = await compute_func()
+        await redis.setex(key, ttl, json.dumps(result, default=str))
+        return result
+    
+    @classmethod
+    async def invalidate_pattern(cls, pattern: str):
+        """Invalidate all keys matching pattern"""
+        redis = await cls.get_redis()
+        keys = await redis.keys(pattern)
+        if keys:
+            await redis.delete(*keys)
+```
+
+### **2.3 Add Caching to Endpoints**
+
+```python
+# app/api/v1/endpoints/categories.py - Example with caching
+from app.services.cache_service import CacheService
+
+@router.get("/", response_model=List[CategoryOut])
+async def read_categories(
+    skip: int = 0,
+    limit: int = 100,
+    category_type: Optional[CategoryType] = Query(None),
+    current_user = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+) -> List[CategoryOut]:
+    # Create cache key based on user and filters
+    cache_key = f"categories:{current_user.id}:{skip}:{limit}:{category_type}"
+    
+    async def fetch_categories():
+        return await CategoryService.get_categories(
+            session=session,
+            user_id=current_user.id,
+            skip=skip,
+            limit=limit,
+            category_type=category_type
+        )
+    
+    # Cache for 5 minutes (300 seconds)
+    return await CacheService.get_or_compute(cache_key, 300, fetch_categories)
+```
+
+### **2.4 Add Invalidation on Write Operations**
+
+```python
+@router.post("/", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
+async def create_category(
+    category_in: CategoryCreate,
+    current_user = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+) -> CategoryOut:
+    # Create category
+    category = await CategoryService.create_category(...)
+    
+    # Invalidate cache for this user's categories
+    await CacheService.invalidate_pattern(f"categories:{current_user.id}:*")
+    
+    return category
+```
+
+---
+
+## 🔧 **PHASE 3: Database Connection Pooling**
+
+### **3.1 Optimize Database Pool Settings**
+
+In `app/core/database.py`:
+
+```python
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from app.core.config import settings
+
+# Optimized pool settings
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,  # Disable echo in production
+    pool_size=20,  # Increase from default
+    max_overflow=10,  # Allow burst connections
+    pool_pre_ping=True,  # Verify connections before using
+    pool_recycle=3600,  # Recycle connections after 1 hour
+    pool_timeout=30  # Wait up to 30 seconds for connection
+)
+
+async_session = sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+```
+
+---
+
+## 📊 **PHASE 4: Query Optimization**
+
+### **4.1 Optimize Transaction Queries**
+
+Current query in `get_transactions` might be doing N+1 queries. Fix with eager loading:
+
+```python
+# In transactions.py - Optimize with joins
+query = select(Transaction).options(
+    selectinload(Transaction.account),
+    selectinload(Transaction.category)
+).where(Transaction.user_id == current_user.id)
+```
+
+### **4.2 Add Pagination Optimization**
+
+```python
+# Add count cache for pagination
+@router.get("/count")
+async def get_transaction_count(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> int:
+    cache_key = f"transaction_count:{current_user.id}"
+    
+    async def count_transactions():
+        result = await db.execute(
+            select(func.count()).where(Transaction.user_id == current_user.id)
+        )
+        return result.scalar()
+    
+    # Cache count for 1 hour (less frequently updated)
+    return await CacheService.get_or_compute(cache_key, 3600, count_transactions)
+```
+
+---
+
+## 🚀 **PHASE 5: Frontend Optimizations**
+
+### **5.1 Add Request Debouncing for Search**
+
+```typescript
+// frontend/src/hooks/useDebounce.ts
+import { useState, useEffect } from 'react';
+
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+```
+
+### **5.2 Implement Request Caching with React Query**
+
+```bash
+npm install @tanstack/react-query
+```
+
+```typescript
+// frontend/src/app/providers.tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
+})
+```
+
+---
+
+## 📋 **Implementation Timeline**
+
+| Phase | Task | Time | Priority |
+|-------|------|------|----------|
+| **1.1** | Add email index | 5 min | 🔴 HIGH |
+| **1.2** | Redis session caching | 2 hrs | 🔴 HIGH |
+| **2.1** | Add all database indexes | 30 min | 🟡 MEDIUM |
+| **2.2** | Implement cache service | 2 hrs | 🟡 MEDIUM |
+| **2.3** | Add caching to endpoints | 3 hrs | 🟡 MEDIUM |
+| **3.1** | Optimize connection pool | 30 min | 🟢 LOW |
+| **4.1** | Optimize queries | 2 hrs | 🟢 LOW |
+| **5.1-5.2** | Frontend optimizations | 4 hrs | 🟢 LOW |
+
+---
+
+## 🎯 **Expected Improvements**
+
+| Endpoint | Current | Target | After Phase 1 | After All Phases |
+|----------|---------|--------|---------------|------------------|
+| **Login** | 376ms | <100ms | 150-200ms | 50-80ms |
+| **Get Categories** | 16ms | <10ms | 16ms | 2-5ms (cached) |
+| **Get Accounts** | 18ms | <10ms | 18ms | 2-5ms (cached) |
+| **Get Transactions** | 14ms | <10ms | 14ms | 5-8ms |
+| **Create Expense** | 32ms | <20ms | 32ms | 15-20ms |
+
+---
+
+## 🚀 **Let's Start with Phase 1.1 - The Quick Win**
+
+```powershell
+# Create migration for email index
+cd C:\Users\tumel\spendwise-sa
+alembic revision --autogenerate -m "add_email_index"
+```
+
+Then run the migration:
+```powershell
+alembic upgrade head
+```
+
+This single change could cut login time by 50-100ms!
+
+Which phase would you like to tackle first?

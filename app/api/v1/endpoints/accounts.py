@@ -1,11 +1,11 @@
-import uuid
+﻿import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.account_service import AccountService
 from app.schemas.account import AccountCreate, AccountUpdate, AccountOut
-from app.api.deps import get_current_user
+from app.api.v1.deps_cookie import get_current_user
 
 router = APIRouter()
 
@@ -326,3 +326,4 @@ async def delete_account(
             detail="Account not found or cannot be deleted"
         )
     return None
+

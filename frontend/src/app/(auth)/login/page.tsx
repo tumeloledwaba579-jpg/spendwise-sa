@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import * as React from 'react';
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import './login.css';
 
@@ -33,11 +33,6 @@ const LoginPage: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // ============================================
   // VALIDATION
@@ -71,52 +66,23 @@ const LoginPage: React.FC = () => {
   // ============================================
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
+    
+    // Prevent double submission
+    if (isLoading) return;
+    
     if (!validateForm()) return;
 
     setIsLoading(true);
     setErrors({});
 
     try {
-      // ✅ Use full URL to backend API
-      const response = await fetch('http://localhost:8000/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store token and user data
-        if (isClient) {
-          const storage = formData.rememberMe ? localStorage : sessionStorage;
-          storage.setItem('auth_token', data.access_token);
-          storage.setItem('auth_user', JSON.stringify(data.user));
-
-          // Update auth context
-          login(data.access_token, data.user);
-
-          // Redirect to dashboard
-          window.location.href = '/dashboard';
-        }
-      } else {
-        let errorMessage = 'Invalid email or password';
-        if (data.detail) {
-          errorMessage = typeof data.detail === 'string' ? data.detail : 'Login failed';
-        }
-        setErrors({ general: errorMessage });
-      }
+      // Use the auth context login function
+      await login(formData.email, formData.password);
+      // No need to redirect - login handles it
     } catch (error: any) {
       console.error('Login error:', error);
       setErrors({
-        general: error.message || 'Network error. Please check if the backend is running on port 8000.'
+        general: error.message || 'Invalid email or password'
       });
     } finally {
       setIsLoading(false);
@@ -134,12 +100,12 @@ const LoginPage: React.FC = () => {
   };
 
   // ============================================
-  // DEMO LOGIN - Fixed password
+  // DEMO LOGIN
   // ============================================
   const handleDemoLogin = () => {
     setFormData({
       email: 'demo@spendwise.co.za',
-      password: 'Demo@123', // ✅ Meets backend requirements
+      password: 'Demo@123',
       rememberMe: false,
     });
     
