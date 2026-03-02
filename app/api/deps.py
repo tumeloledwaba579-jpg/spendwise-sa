@@ -25,10 +25,18 @@ async def get_current_user(
     """
     Get the current authenticated user from JWT token.
     """
+        # ========== DEBUGGING ==========
+    print("\n" + "-"*40)
+    print("🔐 get_current_user called")
+    print(f"   Request path: {request.url.path}")
+    print(f"   Cookies received: {request.cookies}")
+    print(f"   Headers: {dict(request.headers)}")
+    # ================================
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
+        
     )
 
     try:

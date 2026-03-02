@@ -1,4 +1,4 @@
-﻿"""
+"""
 Transaction CRUD endpoints for SpendWise SA.
 """
 from typing import List, Optional
@@ -13,7 +13,7 @@ from app.models.transaction import Transaction
 from app.models.account import Account
 from app.models.category import Category
 from app.models.user import User
-from app.api.v1.deps_cookie import get_current_user
+from app.api.deps import get_current_user
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionOut
 from app.services.transaction_service import TransactionService
 
@@ -152,7 +152,7 @@ async def create_transaction(
         await db.commit()
         await db.refresh(transaction)
         
-        logger.info(f"✅ Transaction created: {transaction.id} for user {current_user.id}")
+        logger.info(f"? Transaction created: {transaction.id} for user {current_user.id}")
         return transaction
         
     except HTTPException:
@@ -160,7 +160,7 @@ async def create_transaction(
         raise
     except Exception as e:
         await db.rollback()
-        logger.error(f"❌ Failed to create transaction: {str(e)}")
+        logger.error(f"? Failed to create transaction: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create transaction. Please try again."
@@ -338,7 +338,7 @@ async def update_transaction(
     await db.commit()
     await db.refresh(transaction)
 
-    logger.info(f"✅ Transaction updated: {transaction.id}")
+    logger.info(f"? Transaction updated: {transaction.id}")
     return transaction
 
 
@@ -373,5 +373,5 @@ async def delete_transaction(
     await db.delete(transaction)
     await db.commit()
 
-    logger.info(f"✅ Transaction deleted: {transaction_id}")
+    logger.info(f"? Transaction deleted: {transaction_id}")
     return None

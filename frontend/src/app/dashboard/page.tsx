@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -86,7 +86,7 @@ export default function DashboardPage() {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
 
-      console.log('📊 Fetching dashboard data...');
+      console.log('?? Fetching dashboard data...');
 
       // Fetch all data in parallel
       const [incomeStatsRes, transactionsRes, accountsRes, monthlySummaryRes] = await Promise.all([
@@ -101,34 +101,34 @@ export default function DashboardPage() {
       if (incomeStatsRes.ok) {
         incomeData = await incomeStatsRes.json();
         setIncomeStats(incomeData);
-        console.log('✅ Income stats loaded:', incomeData);
+        console.log('? Income stats loaded:', incomeData);
       } else {
-        console.warn('⚠️ Income stats not available');
+        console.warn('?? Income stats not available');
       }
 
       let monthlyData: MonthlySummary | null = null;
       if (monthlySummaryRes.ok) {
         monthlyData = await monthlySummaryRes.json();
         setMonthlySummary(monthlyData);
-        console.log('✅ Monthly summary loaded:', monthlyData);
+        console.log('? Monthly summary loaded:', monthlyData);
       } else {
-        console.warn('⚠️ Monthly summary not available');
+        console.warn('?? Monthly summary not available');
       }
 
       let transactions: any[] = [];
       if (transactionsRes.ok) {
         transactions = await transactionsRes.json();
-        console.log('✅ Transactions loaded:', transactions.length);
+        console.log('? Transactions loaded:', transactions.length);
       } else {
-        console.warn('⚠️ Transactions not available');
+        console.warn('?? Transactions not available');
       }
 
       let accounts: any[] = [];
       if (accountsRes.ok) {
         accounts = await accountsRes.json();
-        console.log('✅ Accounts loaded:', accounts.length);
+        console.log('? Accounts loaded:', accounts.length);
       } else {
-        console.warn('⚠️ Accounts not available');
+        console.warn('?? Accounts not available');
       }
 
       // Calculate total balance from accounts
@@ -144,7 +144,7 @@ export default function DashboardPage() {
         // Use monthly summary if available
         monthlyIncome = monthlyData.total_income || 0;
         monthlyExpenses = monthlyData.total_expenses || 0;
-        console.log('📊 Using monthly summary data:', { monthlyIncome, monthlyExpenses });
+        console.log('?? Using monthly summary data:', { monthlyIncome, monthlyExpenses });
       } else {
         // Calculate from transactions
         const monthlyTransactions = transactions.filter((t: any) => {
@@ -161,11 +161,11 @@ export default function DashboardPage() {
           .filter((t: any) => t.type === 'expense' || parseFloat(t.amount) < 0)
           .reduce((sum: number, t: any) => sum + Math.abs(parseFloat(t.amount)), 0);
 
-        console.log('📊 Calculated from transactions:', { monthlyIncome, monthlyExpenses });
+        console.log('?? Calculated from transactions:', { monthlyIncome, monthlyExpenses });
 
         // If still zero but we have annual data, show average as hint
         if (monthlyIncome === 0 && incomeData?.average_monthly_income) {
-          console.log('📊 Using average from annual stats as reference');
+          console.log('?? Using average from annual stats as reference');
         }
       }
 
@@ -185,7 +185,7 @@ export default function DashboardPage() {
       };
       
       setStats(newStats);
-      console.log('✅ Stats calculated:', newStats);
+      console.log('? Stats calculated:', newStats);
 
       // Transform transactions to recent activity format
       if (transactions.length > 0) {
@@ -219,11 +219,11 @@ export default function DashboardPage() {
       }
 
     } catch (err) {
-      console.error('🔴 Error fetching dashboard data:', err);
+      console.error('?? Error fetching dashboard data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
       
       // Fallback to mock data if API fails completely
-      console.log('📊 Using fallback mock data');
+      console.log('?? Using fallback mock data');
       setStats({
         totalBalance: 15420.75,
         monthlyIncome: 32500.00,
@@ -296,14 +296,14 @@ export default function DashboardPage() {
       <div className="dashboard-container">
         <nav className="dashboard-navbar">
           <Link href="/dashboard" className="navbar-brand">
-            <span className="brand-logo">💰 SpendWise SA</span>
+            <span className="brand-logo">?? SpendWise SA</span>
           </Link>
           <div className="navbar-links">
-            <Link href="/dashboard" className="nav-link active">📊 Dashboard</Link>
-            <Link href="/dashboard/income" className="nav-link">💵 Income</Link>
-            <Link href="/dashboard/expenses" className="nav-link">💸 Expenses</Link>
-            <Link href="/dashboard/budgets" className="nav-link">📋 Budgets</Link>
-            <Link href="/dashboard/reports" className="nav-link">📈 Reports</Link>
+            <Link href="/dashboard" className="nav-link active">?? Dashboard</Link>
+            <Link href="/dashboard/income" className="nav-link">?? Income</Link>
+            <Link href="/dashboard/expenses" className="nav-link">?? Expenses</Link>
+            <Link href="/dashboard/budgets" className="nav-link">?? Budgets</Link>
+            <Link href="/dashboard/reports" className="nav-link">?? Reports</Link>
           </div>
           <div className="navbar-user">
             <div className="user-avatar">{getInitials(user.full_name || user.email)}</div>
@@ -328,25 +328,25 @@ export default function DashboardPage() {
       {/* Navigation Bar */}
       <nav className="dashboard-navbar">
         <Link href="/dashboard" className="navbar-brand">
-          <span className="brand-logo">💰 SpendWise SA</span>
+          <span className="brand-logo">?? SpendWise SA</span>
         </Link>
         
         {/* Navigation Links */}
         <div className="navbar-links">
           <Link href="/dashboard" className="nav-link active">
-            📊 Dashboard
+            ?? Dashboard
           </Link>
           <Link href="/dashboard/income" className="nav-link">
-            💵 Income
+            ?? Income
           </Link>
           <Link href="/dashboard/expenses" className="nav-link">
-            💸 Expenses
+            ?? Expenses
           </Link>
           <Link href="/dashboard/budgets" className="nav-link">
-            📋 Budgets
+            ?? Budgets
           </Link>
           <Link href="/dashboard/reports" className="nav-link">
-            📈 Reports
+            ?? Reports
           </Link>
         </div>
         
@@ -368,7 +368,7 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <section className="welcome-section fade-in">
           <h1 className="welcome-title">
-            Welcome back, {user.full_name?.split(' ')[0] || 'User'}! 👋
+            Welcome back, {user.full_name?.split(' ')[0] || 'User'}! ??
           </h1>
           <p className="welcome-subtitle">
             Here's an overview of your finances. Track, manage, and optimize your spending with our smart tools.
@@ -381,7 +381,7 @@ export default function DashboardPage() {
             <div className="stat-card">
               <div className="stat-header">
                 <h3 className="stat-title">Total Balance</h3>
-                <div className="stat-icon">💰</div>
+                <div className="stat-icon">??</div>
               </div>
               <div className="stat-value">{formatCurrency(stats.totalBalance)}</div>
               <div className="stat-trend">
@@ -392,7 +392,7 @@ export default function DashboardPage() {
             <div className="stat-card">
               <div className="stat-header">
                 <h3 className="stat-title">Monthly Income</h3>
-                <div className="stat-icon">📈</div>
+                <div className="stat-icon">??</div>
               </div>
               <div className="stat-value">
                 {formatCurrency(stats.monthlyIncome)}
@@ -412,7 +412,7 @@ export default function DashboardPage() {
             <div className="stat-card">
               <div className="stat-header">
                 <h3 className="stat-title">Monthly Expenses</h3>
-                <div className="stat-icon">📉</div>
+                <div className="stat-icon">??</div>
               </div>
               <div className="stat-value">{formatCurrency(stats.monthlyExpenses)}</div>
               <div className="stat-trend">
@@ -425,7 +425,7 @@ export default function DashboardPage() {
             <div className="stat-card">
               <div className="stat-header">
                 <h3 className="stat-title">Savings Rate</h3>
-                <div className="stat-icon">🎯</div>
+                <div className="stat-icon">??</div>
               </div>
               <div className="stat-value">{stats.savingsRate.toFixed(1)}%</div>
               <div className="stat-trend">
@@ -442,7 +442,7 @@ export default function DashboardPage() {
               <div className="stat-card highlight-card">
                 <div className="stat-header">
                   <h3 className="stat-title">Annual Income Overview</h3>
-                  <div className="stat-icon">📊</div>
+                  <div className="stat-icon">??</div>
                 </div>
                 <div className="stats-row">
                   <div className="stats-col">
@@ -496,42 +496,42 @@ export default function DashboardPage() {
           <h2 className="section-title">Quick Actions</h2>
           <div className="actions-grid">
             <Link href="/dashboard/income" className="action-button highlight">
-              <div className="action-icon">💰</div>
+              <div className="action-icon">??</div>
               <span className="action-label">Track Income</span>
             </Link>
             
             <Link href="/dashboard/transactions/add" className="action-button">
-              <div className="action-icon">💳</div>
+              <div className="action-icon">??</div>
               <span className="action-label">Add Transaction</span>
             </Link>
             
             <Link href="/dashboard/budgets" className="action-button">
-              <div className="action-icon">📊</div>
+              <div className="action-icon">??</div>
               <span className="action-label">Set Budget</span>
             </Link>
             
             <Link href="/dashboard/goals" className="action-button">
-              <div className="action-icon">🏆</div>
+              <div className="action-icon">??</div>
               <span className="action-label">Set Goals</span>
             </Link>
             
             <Link href="/dashboard/reports" className="action-button">
-              <div className="action-icon">📈</div>
+              <div className="action-icon">??</div>
               <span className="action-label">View Reports</span>
             </Link>
             
             <Link href="/dashboard/profile" className="action-button">
-              <div className="action-icon">👤</div>
+              <div className="action-icon">??</div>
               <span className="action-label">My Profile</span>
             </Link>
             
             <Link href="/dashboard/settings" className="action-button">
-              <div className="action-icon">⚙️</div>
+              <div className="action-icon">??</div>
               <span className="action-label">Settings</span>
             </Link>
             
             <button onClick={fetchDashboardData} className="action-button">
-              <div className="action-icon">🔄</div>
+              <div className="action-icon">??</div>
               <span className="action-label">Refresh</span>
             </button>
           </div>
@@ -543,7 +543,7 @@ export default function DashboardPage() {
             <h2 className="section-title">Recent Activity</h2>
             {recentActivity.length > 0 && (
               <Link href="/dashboard/transactions" className="view-all-link">
-                View All →
+                View All ?
               </Link>
             )}
           </div>
@@ -559,7 +559,7 @@ export default function DashboardPage() {
               {recentActivity.map((activity) => (
                 <div key={activity.id} className="activity-item">
                   <div className={`activity-icon ${activity.type}`}>
-                    {activity.type === 'income' ? '💰' : '💸'}
+                    {activity.type === 'income' ? '??' : '??'}
                   </div>
                   <div className="activity-content">
                     <h4 className="activity-title">{activity.title}</h4>
@@ -581,7 +581,7 @@ export default function DashboardPage() {
 
       {/* Footer */}
       <footer className="dashboard-footer">
-        <p>© {new Date().getFullYear()} SpendWise SA. All rights reserved.</p>
+        <p>� {new Date().getFullYear()} SpendWise SA. All rights reserved.</p>
         <p>Making financial management simple and effective for South Africans.</p>
       </footer>
     </div>

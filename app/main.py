@@ -187,8 +187,8 @@ def create_application() -> FastAPI:
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
     logger.info("auth_routes_configured")
     
-    # Core financial endpoints
-    app.include_router(accounts.router, prefix="/api/v1/accounts", tags=["accounts"])
+    # Core financial endpoints - CRITICAL: accounts router has its own prefix
+    app.include_router(accounts.router, prefix="/api/v1", tags=["accounts"])
     app.include_router(budgets.router, prefix="/api/v1", tags=["budgets"])
     app.include_router(categories.router, prefix="/api/v1/categories", tags=["categories"])
     app.include_router(payment_methods.router, prefix="/api/v1/payment-methods", tags=["payment-methods"])
@@ -198,6 +198,18 @@ def create_application() -> FastAPI:
     app.include_router(debt.router, prefix="/api/v1", tags=["debts"])
     
     logger.info("core_routes_configured", count=9)
+
+    # =========================================================================
+    # DEBUG: Print all registered routes
+    # =========================================================================
+    print("\n" + "="*60)
+    print("📋 REGISTERED ROUTES DEBUG:")
+    print("="*60)
+    for route in app.routes:
+        if hasattr(route, "methods") and hasattr(route, "path"):
+            methods = ", ".join(route.methods)
+            print(f"   {methods:8} {route.path}")
+    print("="*60 + "\n")
 
     # =========================================================================
     # METRICS ENDPOINT

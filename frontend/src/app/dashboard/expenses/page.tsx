@@ -301,7 +301,7 @@ export default function ExpensesPage() {
     
     for (const acc of defaultAccounts) {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -337,7 +337,7 @@ export default function ExpensesPage() {
 
       const [categoriesRes, accountsRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/categories/`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/`, { headers })
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts`, { headers })
       ]);
 
       console.log('📊 Categories response status:', categoriesRes.status);
@@ -388,7 +388,7 @@ export default function ExpensesPage() {
 
       // If we created new accounts, fetch them again to ensure we have all data
       if (finalAccounts.length === 0) {
-        const refreshAccs = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/`, { headers });
+        const refreshAccs = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts`, { headers });
         if (refreshAccs.ok) {
           finalAccounts = await refreshAccs.json();
         }
