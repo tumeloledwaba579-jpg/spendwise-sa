@@ -1,0 +1,504 @@
+# 📚 **Complete Development Reference Guide**
+
+## **SpendWise SA - Development Workflow Documentation**
+
+---
+
+## 📋 **Table of Contents**
+1. [Adding New Pages](#adding-new-pages)
+2. [Docker Troubleshooting](#docker-troubleshooting)
+3. [WSL Setup & Fixes](#wsl-setup--fixes)
+4. [Database Setup](#database-setup)
+5. [Git Workflow](#git-workflow)
+6. [Common Errors & Solutions](#common-errors--solutions)
+
+---
+
+## 🎯 **Adding New Pages**
+
+### **1. File Structure (CRITICAL)**
+Next.js uses the file system for routing. The file location determines the URL:
+
+```
+frontend/src/app/
+├── dashboard/
+│   ├── page.tsx                 → /dashboard
+│   ├── income/
+│   │   └── page.tsx              → /dashboard/income
+│   ├── expenses/
+│   │   └── page.tsx              → /dashboard/expenses
+│   └── settings/
+│       └── page.tsx              → /dashboard/settings
+├── about/
+│   └── page.tsx                  → /about
+└── (auth)/
+    ├── login/
+    │   └── page.tsx              → /login
+    └── register/
+        └── page.tsx              → /register
+```
+
+### **2. Basic Page Template**
+```tsx
+'use client';  // Required for hooks and interactivity
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import './your-page.css';  // Import your styles
+
+// Types
+interface YourDataType {
+  id: string;
+  name: string;
+  // ... other fields
+}
+
+export default function YourPage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  const [data, setData] = useState<YourDataType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Protect route - redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      fetchData();
+    }
+  }, [user, authLoading, router]);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('http://localhost:8000/api/v1/your-endpoint', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      setError('Failed to load data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  return (
+    <div className="dashboard-container">
+      {/* Your page content */}
+      <h1>Your Page Title</h1>
+    </div>
+  );
+}
+```
+
+### **3. Add Navigation Link**
+In your dashboard/page.tsx, add the link:
+
+```tsx
+// In navigation bar
+<div className="navbar-links">
+  <Link href="/dashboard" className="nav-link">📊 Dashboard</Link>
+  <Link href="/dashboard/income" className="nav-link">💵 Income</Link>
+  <Link href="/dashboard/your-new-page" className="nav-link">✨ New Page</Link>
+</div>
+
+// In quick actions
+<Link href="/dashboard/your-new-page" className="action-button">
+  <div className="action-icon">✨</div>
+  <span className="action-label">New Page</span>
+</Link>
+```
+
+### **4. API Integration Pattern**
+```tsx
+// In your page.tsx
+const fetchData = async () => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/your-endpoint`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to fetch');
+    const data = await response.json();
+    setData(data);
+  } catch (error) {
+    console.error('Error:', error);
+    setError(error.message);
+  }
+};
+```
+
+---
+
+## 🐳 **Docker Troubleshooting**
+
+### **1. Docker Communication Error**
+**Problem:** Frontend can't reach backend
+```
+Error: Connection refused to localhost:8000
+```
+
+**Solution:** Use service names, not localhost
+```yaml
+# docker-compose.yml
+environment:
+  - NEXT_PUBLIC_API_URL=http://api:8000  # ✅ NOT localhost:8000
+```
+
+### **2. ENOMEM Memory Error**
+**Problem:** Docker runs out of memory watching files
+```
+Watchpack Error: ENOMEM: not enough memory
+```
+
+**Solutions:**
+```yaml
+# Option 1: Increase memory in docker-compose.yml
+mem_limit: 4g
+environment:
+  - WATCHPACK_POLLING=1000
+  - CHOKIDAR_USEPOLLING=true
+
+# Option 2: Use WSL native (recommended)
+# Run directly in WSL, not Docker
+cd /opt/spendwise-sa
+npm run dev
+```
+
+### **3. next.config.js Syntax**
+**Problem:** Template literals cause build failures
+```javascript
+// ❌ DON'T - causes syntax error
+destination: `${process.env.API_URL}/api/:path*`
+
+// ✅ DO - use string concatenation
+destination: process.env.API_URL + '/api/:path*'
+```
+
+### **4. Complete Docker Compose for Development**
+```yaml
+version: '3.8'
+services:
+  frontend-dev:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://api:8000
+      - WATCHPACK_POLLING=1000
+    command: sh -c "npm install && npm run dev"
+```
+
+---
+
+## 🔧 **WSL Setup & Fixes**
+
+### **1. Clean PATH for Node.js**
+**Problem:** Windows paths in WSL cause npm errors
+```bash
+# Check PATH - if you see /mnt/c/... paths, clean it
+echo $PATH
+
+# Fix by adding to ~/.bashrc
+echo 'export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### **2. Install Node.js on Oracle Linux**
+```bash
+# Enable Node.js 18 module
+sudo dnf module enable nodejs:18 -y
+sudo dnf install -y nodejs npm
+
+# Verify
+node --version
+npm --version
+```
+
+### **3. Start Services in WSL**
+```bash
+# Start Redis (without systemd)
+sudo redis-server --daemonize yes
+
+# Check Redis
+redis-cli ping  # Should return PONG
+
+# PostgreSQL with Docker (easier than native)
+docker run -d \
+  --name spendwise-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=root123 \
+  -e POSTGRES_DB=spendwise_db \
+  -p 5432:5432 \
+  postgres:15-alpine
+```
+
+### **4. WSL Commands Cheat Sheet**
+```powershell
+# From PowerShell
+wsl ~                    # Enter WSL
+wsl --shutdown           # Shutdown WSL
+wsl -l -v                # List WSL versions
+
+# From WSL (Linux)
+pwd                      # Print working directory
+cd /opt/spendwise-sa     # Navigate to project
+source venv/bin/activate # Activate Python venv
+```
+
+---
+
+## 🗄️ **Database Setup**
+
+### **1. PostgreSQL with Docker (Recommended)**
+```bash
+# Run PostgreSQL container
+docker run -d \
+  --name spendwise-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=root123 \
+  -e POSTGRES_DB=spendwise_db \
+  -p 5432:5432 \
+  --restart unless-stopped \
+  postgres:15-alpine
+
+# Connect to database
+docker exec -it spendwise-postgres psql -U postgres -d spendwise_db
+
+# Common psql commands
+\l                        # List databases
+\dt                       # List tables
+\d table_name             # Describe table
+\q                        # Quit
+```
+
+### **2. Environment Variables**
+```bash
+# .env file for backend
+DATABASE_URL=postgresql+asyncpg://postgres:root123@localhost:5432/spendwise_db
+REDIS_HOST=localhost
+REDIS_PORT=6379
+BACKEND_CORS_ORIGINS=http://localhost:3000
+SECRET_KEY=your-secret-key-here
+```
+
+### **3. Alembic Migrations**
+```bash
+# Run migrations
+alembic upgrade head
+
+# Create new migration
+alembic revision --autogenerate -m "description"
+
+# View history
+alembic history
+```
+
+---
+
+## 📂 **Git Workflow**
+
+### **1. Branch Strategy**
+```bash
+# Create new branch for feature
+git checkout -b feature/your-feature-name
+
+# Or for bug fixes
+git checkout -b fix/issue-description
+```
+
+### **2. Committing Changes**
+```bash
+# Check what changed
+git status
+
+# Add specific files
+git add frontend/src/app/dashboard/your-new-page/
+git add frontend/src/app/dashboard/page.tsx
+
+# Commit with descriptive message
+git commit -m "feat(area): brief description
+
+- Detailed point 1
+- Detailed point 2
+- Detailed point 3
+
+Closes #123"
+```
+
+### **3. Handling Build Files**
+```bash
+# Add to .gitignore
+echo ".next/" >> frontend/.gitignore
+echo "next-env.d.ts" >> frontend/.gitignore
+echo "node_modules/" >> frontend/.gitignore
+
+# Remove if already tracked
+git rm -r --cached frontend/.next
+git rm --cached frontend/next-env.d.ts
+```
+
+### **4. Push to Remote**
+```bash
+# Add remote (one time)
+git remote add origin https://github.com/yourusername/spendwise-sa.git
+
+# Push branch
+git push -u origin feature/your-feature-name
+```
+
+---
+
+## ⚠️ **Common Errors & Solutions**
+
+### **Error 1: Module Not Found**
+```
+Error: Cannot find module '@/components/xyz'
+```
+**Fix:** Check import path - use relative or absolute paths correctly
+```tsx
+// ✅ Absolute (if configured)
+import { Xyz } from '@/components/Xyz'
+
+// ✅ Relative
+import { Xyz } from '../../components/Xyz'
+```
+
+### **Error 2: 404 on New Page**
+```
+http://localhost:3000/dashboard/new-page → 404
+```
+**Fix:** Check file location - must be `app/dashboard/new-page/page.tsx`
+
+### **Error 3: API Connection Failed**
+```
+Error: Connection refused to localhost:8000
+```
+**Fix:** Check environment variable
+```bash
+# In Docker
+NEXT_PUBLIC_API_URL=http://api:8000
+
+# In local/WSL
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### **Error 4: Redis Connection**
+```
+⚠ Redis not available: Error 111 connecting to localhost:6379
+```
+**Fix:** Start Redis
+```bash
+sudo redis-server --daemonize yes
+# or
+docker run -d --name redis -p 6379:6379 redis:alpine
+```
+
+### **Error 5: Alembic Traceback**
+Long traceback during startup is **NORMAL** - it's just checking migrations.
+
+### **Error 6: Permission Denied**
+```
+Permission denied when running commands
+```
+**Fix:** Use proper user
+```bash
+# PostgreSQL commands need postgres user
+sudo -u postgres psql
+
+# Don't run as root for development
+# Create a normal user if needed
+```
+
+---
+
+## 📝 **Quick Reference Commands**
+
+### **Start Everything (WSL)**
+```bash
+# Terminal 1 - Backend
+cd /opt/spendwise-sa
+source venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2 - Frontend
+cd /opt/spendwise-sa/frontend
+npm run dev
+
+# Terminal 3 - Database (if using Docker)
+docker start spendwise-postgres
+```
+
+### **Start Everything (Docker)**
+```bash
+cd /opt/spendwise-sa
+docker-compose up -d
+docker-compose logs -f frontend
+```
+
+### **Git Cheat Sheet**
+```bash
+git status                    # Check changes
+git add .                     # Add all
+git commit -m "message"       # Commit
+git push                      # Push to remote
+git pull                      # Pull from remote
+git branch                    # List branches
+git checkout -b new-branch    # Create and switch
+```
+
+---
+
+## 🎯 **Page Creation Checklist**
+
+When adding a new page:
+
+- [ ] Create correct folder: `app/dashboard/page-name/page.tsx`
+- [ ] Add `'use client'` directive
+- [ ] Import and use `useAuth` for protection
+- [ ] Add loading and error states
+- [ ] Create CSS file: `page-name.css`
+- [ ] Add navigation link in dashboard
+- [ ] Add to quick actions (optional)
+- [ ] Test locally: `http://localhost:3000/dashboard/page-name`
+- [ ] Commit with descriptive message
+- [ ] Update this documentation if needed
+
+---
+
+## 📚 **Conclusion**
+
+This guide covers everything we went through. Key takeaways:
+
+1. **File location determines URL** - put pages in the right folders
+2. **WSL is better than Docker for development** - fewer memory issues
+3. **Use service names in Docker** (`api:8000` not `localhost:8000`)
+4. **Clean PATH in WSL** to avoid Windows conflicts
+5. **Database in Docker** is easier than native WSL
+6. **Commit often** with clear messages
+7. **Ignore build files** (`.next/`, `next-env.d.ts`)
+
+**Happy coding!** 🚀
