@@ -1,97 +1,17 @@
-﻿# Python
-__pycache__/
-*.py[cod]
-*.class
-*.so
-.Python
-venv/
-env/
-ENV/
-.venv
-pip-log.txt
-pip-delete-this-directory.txt
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.mypy_cache/
-.dmypy.json
-dmypy.json
-*.egg-info/
+﻿# Node modules - NEVER COMMIT THESE
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build
+frontend/dist
 
-# Database
-*.db
-*.sqlite3
+# Large binaries
+*.node
+*.dll
+*.so
+*.dylib
 
 # Environment
 .env
 .env.local
 .env.*.local
-!.env.example
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Backend
-alembic/versions/*.pyc
-alembic/versions/__pycache__/
-alembic/versions/*_test_*.py
-
-# Frontend
-frontend/.next/
-frontend/out/
-frontend/build
-frontend/node_modules/
-frontend/.env.local
-frontend/.env.*.local
-frontend/next-env.d.ts
-frontend/package-lock.json
-frontend/yarn.lock
-frontend/.vercel
-frontend/*.log
-frontend/*.backup
-frontend/*.bak
-frontend/src/app/**/*.backup
-frontend/src/app/**/*.corrupted*
-frontend/src/app/**/*.bak
-frontend/reset-*.ps1
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Backups
-*.backup
-*.bak
-*.back
-*.orig
-*~
-
-# Temporary files
-*.tmp
-*.temp
-.cache
-
-# Docker
-docker-compose.override.yml
-
-# Documentation
-* Development Workflow Documentation.txt
-Complete Development Documentation Git LFS STORAGE
-
-# Test files
-test_*.py
-*_test.py
-test_*.js
-*_test.js
