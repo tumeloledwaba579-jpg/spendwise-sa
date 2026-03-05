@@ -94,6 +94,49 @@ export default function IncomePage() {
     notes: ''
   });
 
+  // Helper function to get initials from name
+  const getInitials = (name: string): string => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Helper function to format currency
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency: 'ZAR',
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-ZA', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Helper function to get frequency label
+  const getFrequencyLabel = (frequency: string): string => {
+    const labels: { [key: string]: string } = {
+      'DAILY': 'Daily',
+      'WEEKLY': 'Weekly',
+      'BIWEEKLY': 'Bi-weekly',
+      'MONTHLY': 'Monthly',
+      'QUARTERLY': 'Quarterly',
+      'YEARLY': 'Yearly'
+    };
+    return labels[frequency] || frequency;
+  };
+
   // Helper function to reset source form
   const resetSourceForm = () => {
     setNewSource({
@@ -122,332 +165,325 @@ export default function IncomePage() {
     }
   }, [user, authLoading, router]);
 
-  const fetchAllIncomeData = async () => {
-    console.log('API URL from env:', process.env.NEXT_PUBLIC_API_URL);
-    console.log('Full URL being called:', `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources?active_only=true`);
-    setIsLoading(true);
-    setError(null);
-  
-    try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
+const fetchAllIncomeData = async () => {
+  console.log('API URL from env:', process.env.NEXT_PUBLIC_API_URL);
+  console.log('Full URL being called:', `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources?active_only=true`);
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    // ✅ FIXED: Properly typed fetch options with trailing slashes
+    const fetchOptions = {
+      credentials: 'include' as RequestCredentials,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    console.log(`📅 Fetching data for: ${currentYear}-${currentMonth}`);
+
+    // Fetch all data in parallel with cookies - USING TRAILING SLASHES
+    const [sourcesRes, historyRes, summaryRes, statsRes] = await Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/?active_only=true`, fetchOptions),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/history/?limit=50`, fetchOptions),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/summary/${currentYear}/${currentMonth}/`, fetchOptions),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/stats/?year=${currentYear}`, fetchOptions)
+    ]);
+
+    // Log response statuses for debugging
+    console.log('📊 Response statuses:', {
+      sources: sourcesRes.status,
+      history: historyRes.status,
+      summary: summaryRes.status,
+      stats: statsRes.status
+    });
+
+    // Check sources response (required)
+    if (!sourcesRes.ok) {
+      if (sourcesRes.status === 401) {
+        console.log('🔒 Session expired, redirecting to login');
         router.push('/login');
         return;
       }
-
-      const headers = { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
-
-      // Fetch all data in parallel from your REAL backend
-      const [sourcesRes, historyRes, summaryRes, statsRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources?active_only=true`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/history?limit=50`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/summary/${currentYear}/${currentMonth}`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/stats?year=${currentYear}`, { headers })
-      ]);
-
-      // Check responses
-      if (!sourcesRes.ok) {
-        throw new Error(`Failed to fetch sources: ${sourcesRes.status}`);
-      }
-
-      // Parse JSON
-      const sources = await sourcesRes.json();
-      setIncomeSources(sources);
-
-      // Handle history (might be empty)
-      if (historyRes.ok) {
-        const history = await historyRes.json();
-        setIncomeHistory(history);
-      }
-
-      // Handle summary (might be 404 if no data for this month)
-      if (summaryRes.ok) {
-        const summary = await summaryRes.json();
-        setMonthlySummary(summary);
-      } else {
-        // Create empty summary if none exists
-        setMonthlySummary({
-          year: currentYear,
-          month: currentMonth,
-          total_income: 0,
-          total_tax: 0,
-          net_income: 0,
-          recurring_income: 0,
-          one_time_income: 0
-        });
-      }
-
-      // Handle stats
-      if (statsRes.ok) {
-        const stats = await statsRes.json();
-        setIncomeStats(stats);
-      }
-
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-    } finally {
-      setIsLoading(false);
+      throw new Error(`Failed to fetch sources: ${sourcesRes.status} ${sourcesRes.statusText}`);
     }
-  };
 
-  const handleAddIncomeSource = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+    // Parse sources JSON
+    const sources = await sourcesRes.json();
+    console.log('✅ Sources loaded:', sources.length);
+    setIncomeSources(sources);
 
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...newSource,
-          amount: parseFloat(newSource.amount),
-          tax_rate: newSource.tax_rate ? parseFloat(newSource.tax_rate) : null
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to add income source');
-      }
-
-      const addedSource = await response.json();
-      setIncomeSources([...incomeSources, addedSource]);
-      setShowAddSourceModal(false);
-      setEditingSource(null);
-      resetSourceForm();
-
-    } catch (err) {
-      console.error('Error adding source:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add source');
-    } finally {
-      setIsSubmitting(false);
+    // Handle history (optional)
+    if (historyRes.ok) {
+      const history = await historyRes.json();
+      console.log('✅ History loaded:', history.length);
+      setIncomeHistory(history);
+    } else {
+      console.log('ℹ️ No history data available');
+      setIncomeHistory([]);
     }
-  };
 
-  const handleRecordIncome = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/history`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...newIncome,
-          amount: parseFloat(newIncome.amount),
-          tax_amount: newIncome.tax_amount ? parseFloat(newIncome.tax_amount) : null,
-          is_manual_entry: true
-        })
+    // Handle summary (optional)
+    if (summaryRes.ok) {
+      const summary = await summaryRes.json();
+      console.log('✅ Summary loaded:', summary);
+      setMonthlySummary(summary);
+    } else {
+      console.log('ℹ️ No summary data available for this month');
+      setMonthlySummary({
+        year: currentYear,
+        month: currentMonth,
+        total_income: 0,
+        total_tax: 0,
+        net_income: 0,
+        recurring_income: 0,
+        one_time_income: 0
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to record income');
-      }
-
-      const recordedIncome = await response.json();
-      setIncomeHistory([recordedIncome, ...incomeHistory]);
-      setShowRecordIncomeModal(false);
-      
-      // Refresh summary and stats
-      fetchAllIncomeData();
-      
-      // Reset form
-      setNewIncome({
-        income_source_id: '',
-        amount: '',
-        received_date: new Date().toISOString().split('T')[0],
-        tax_amount: '',
-        notes: ''
-      });
-
-    } catch (err) {
-      console.error('Error recording income:', err);
-      setError(err instanceof Error ? err.message : 'Failed to record income');
-    } finally {
-      setIsSubmitting(false);
     }
-  };
 
-  const handleUpdateIncomeSource = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingSource) return;
+    // Handle stats (optional)
+    if (statsRes.ok) {
+      const stats = await statsRes.json();
+      console.log('✅ Stats loaded:', stats);
+      setIncomeStats(stats);
+    } else {
+      console.log('ℹ️ No stats data available');
+    }
+
+  } catch (err) {
+    console.error('🔴 Error fetching data:', err);
+    setError(err instanceof Error ? err.message : 'Failed to load data');
     
-    setIsSubmitting(true);
-    setError(null);
+    // Set empty defaults on error
+    setIncomeSources([]);
+    setIncomeHistory([]);
+    setMonthlySummary({
+      year: new Date().getFullYear(),
+      month: new Date().getMonth() + 1,
+      total_income: 0,
+      total_tax: 0,
+      net_income: 0,
+      recurring_income: 0,
+      one_time_income: 0
+    });
+    
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-    try {
-      const token = localStorage.getItem('auth_token');
-      
-      // Prepare the update data - only include fields that exist in your backend
-      const updateData: any = {
+const handleAddIncomeSource = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
         name: newSource.name,
         type: newSource.type,
         frequency: newSource.frequency,
         amount: parseFloat(newSource.amount),
         is_recurring: newSource.is_recurring,
         is_taxable: newSource.is_taxable,
-      };
+        tax_rate: newSource.tax_rate ? parseFloat(newSource.tax_rate) : null,
+        start_date: newSource.start_date,
+        notes: newSource.notes || null
+      })
+    });
 
-      // Only add tax_rate if auto_tax_calculation is true and tax_rate has a value
-      if (newSource.auto_tax_calculation && newSource.tax_rate) {
-        updateData.tax_rate = parseFloat(newSource.tax_rate);
-        updateData.auto_tax_calculation = true;
-      } else {
-        updateData.tax_rate = null;
-        updateData.auto_tax_calculation = false;
-      }
-
-      // Add notes if your backend supports it
-      if (newSource.notes) {
-        updateData.notes = newSource.notes;
-      }
-
-      console.log('🔵 Sending update data:', updateData); // Debug log
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/${editingSource.id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(updateData)
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('🔴 Update error response:', errorData);
-        throw new Error(errorData.detail || 'Failed to update income source');
-      }
-
-      const updatedSource = await response.json();
-      console.log('🟢 Update successful:', updatedSource);
-      
-      // Find the original source in the list for comparison
-      const originalSource = incomeSources.find(s => s.id === editingSource.id);
-      console.log('📝 Original source:', originalSource);
-      console.log('📝 Updated source from API:', updatedSource);
-      
-      // Check if they're different
-      if (JSON.stringify(originalSource) !== JSON.stringify(updatedSource)) {
-        console.log('✅ Source was updated successfully');
-      } else {
-        console.log('⚠️ Source did not change - check if backend is processing the update');
-      }
-      
-      // Update the source in the list
-      setIncomeSources(incomeSources.map(s => 
-        s.id === updatedSource.id ? updatedSource : s
-      ));
-      
-      // Close modal and reset
-      setShowAddSourceModal(false);
-      setEditingSource(null);
-      resetSourceForm();
-
-    } catch (err) {
-      console.error('🔴 Error updating source:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update source');
-    } finally {
-      setIsSubmitting(false);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to add income source');
     }
-  };
 
-  const handleDeleteSource = async () => {
-    if (!sourceToDelete) return;
+    const addedSource = await response.json();
+    setIncomeSources([...incomeSources, addedSource]);
+    setShowAddSourceModal(false);
+    setEditingSource(null);
+    resetSourceForm();
+
+    // Refresh data to get updated summary
+    await fetchAllIncomeData();
+
+  } catch (err) {
+    console.error('Error adding source:', err);
+    setError(err instanceof Error ? err.message : 'Failed to add source');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const handleRecordIncome = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/history/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        income_source_id: newIncome.income_source_id,
+        amount: parseFloat(newIncome.amount),
+        received_date: newIncome.received_date,
+        tax_amount: newIncome.tax_amount ? parseFloat(newIncome.tax_amount) : null,
+        notes: newIncome.notes || null,
+        is_manual_entry: true
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to record income');
+    }
+
+    const recordedIncome = await response.json();
+    setIncomeHistory([recordedIncome, ...incomeHistory]);
+    setShowRecordIncomeModal(false);
     
-    setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/${sourceToDelete}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+    // Refresh all data to update summary and stats
+    await fetchAllIncomeData();
+    
+    setNewIncome({
+      income_source_id: '',
+      amount: '',
+      received_date: new Date().toISOString().split('T')[0],
+      tax_amount: '',
+      notes: ''
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to delete source');
-      }
+  } catch (err) {
+    console.error('Error recording income:', err);
+    setError(err instanceof Error ? err.message : 'Failed to record income');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-      setIncomeSources(incomeSources.filter(s => s.id !== sourceToDelete));
-      setShowDeleteConfirmModal(false);
-      setSourceToDelete(null);
 
-    } catch (err) {
-      console.error('Error deleting source:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete source');
-    } finally {
-      setIsSubmitting(false);
+const handleUpdateIncomeSource = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!editingSource) return;
+  
+  setIsSubmitting(true);
+  setError(null);
+
+  try {
+    const updateData: any = {
+      name: newSource.name,
+      type: newSource.type,
+      frequency: newSource.frequency,
+      amount: parseFloat(newSource.amount),
+      is_recurring: newSource.is_recurring,
+      is_taxable: newSource.is_taxable,
+    };
+
+    if (newSource.auto_tax_calculation && newSource.tax_rate) {
+      updateData.tax_rate = parseFloat(newSource.tax_rate);
+      updateData.auto_tax_calculation = true;
+    } else {
+      updateData.tax_rate = null;
+      updateData.auto_tax_calculation = false;
     }
-  };
+
+    if (newSource.notes) {
+      updateData.notes = newSource.notes;
+    }
+
+    console.log('🔵 Sending update data:', updateData);
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/${editingSource.id}/`,
+      {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('🔴 Update error response:', errorData);
+      throw new Error(errorData.detail || 'Failed to update income source');
+    }
+
+    const updatedSource = await response.json();
+    console.log('🟢 Update successful:', updatedSource);
+    
+    setIncomeSources(incomeSources.map(s => 
+      s.id === updatedSource.id ? updatedSource : s
+    ));
+    
+    setShowAddSourceModal(false);
+    setEditingSource(null);
+    resetSourceForm();
+
+    // Refresh data to get updated summary
+    await fetchAllIncomeData();
+
+  } catch (err) {
+    console.error('🔴 Error updating source:', err);
+    setError(err instanceof Error ? err.message : 'Failed to update source');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const handleDeleteSource = async () => {
+  if (!sourceToDelete) return;
+  
+  setIsSubmitting(true);
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/sources/${sourceToDelete}/`,
+      {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to delete source');
+    }
+
+    setIncomeSources(incomeSources.filter(s => s.id !== sourceToDelete));
+    setShowDeleteConfirmModal(false);
+    setSourceToDelete(null);
+
+    // Refresh data to get updated summary
+    await fetchAllIncomeData();
+
+  } catch (err) {
+    console.error('Error deleting source:', err);
+    setError(err instanceof Error ? err.message : 'Failed to delete source');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleLogout = () => {
     logout();
     router.push('/login');
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: 'ZAR',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
-  const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-ZA', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getFrequencyLabel = (frequency: string): string => {
-    const labels: { [key: string]: string } = {
-      'DAILY': 'Daily',
-      'WEEKLY': 'Weekly',
-      'BIWEEKLY': 'Bi-weekly',
-      'MONTHLY': 'Monthly',
-      'QUARTERLY': 'Quarterly',
-      'YEARLY': 'Yearly'
-    };
-    return labels[frequency] || frequency;
   };
 
   const getIncomeTypeLabel = (type: string): string => {

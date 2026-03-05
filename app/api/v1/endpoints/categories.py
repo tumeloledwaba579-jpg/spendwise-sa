@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +7,7 @@ from app.services.category_service import CategoryService
 from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryOut, CategoryType
 from app.api.v1.deps_cookie import get_current_user
 
-router = APIRouter()
+router = APIRouter(prefix="/categories", tags=["categories"])
 
 @router.post("/", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
 async def create_category(

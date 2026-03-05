@@ -1,89 +1,58 @@
 """
-Income tracking service layer.
-Contains business logic for income sources, history, and analytics.
+Income service for SpendWise API.
+Handles income sources and history with optimized queries.
 """
-from datetime import date, datetime, timedelta
-from decimal import Decimal
 from uuid import UUID
-from typing import Optional, List
-
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, and_, func
+from datetime import date, datetime
+import uuid as uuid_pkg
 
-from app.models.income import IncomeSource, IncomeHistory, IncomeMonthlySummary, IncomeType, IncomeFrequency
-from app.models.user import User
+from app.models.income import IncomeSource, IncomeHistory
 from app.schemas.income import (
     IncomeSourceCreate, IncomeSourceInDB, IncomeSourceUpdate,
     IncomeHistoryCreate, IncomeHistoryInDB,
-    IncomeMonthlySummaryOut, IncomeSummary, IncomeStats
+    IncomeMonthlySummaryOut, IncomeStats
 )
 
-
 class IncomeService:
-    """Service for income tracking operations."""
-
-    # =========================================================================
-    # INCOME SOURCE OPERATIONS
-    # =========================================================================
-
+    """Service for income operations."""
+    
+    def __init__(self, session: AsyncSession):
+        self.session = session
+    
+    # ========================================================================
+    # INCOME SOURCES
+    # ========================================================================
     @staticmethod
     async def create_income_source(
         session: AsyncSession,
         user_id: UUID,
-        income_in: IncomeSourceCreate
+        source_in: IncomeSourceCreate
     ) -> IncomeSourceInDB:
-        """
-        Create a new income source.
+        """Create a new income source."""
+        print(f"🔍 create_income_source called for user: {user_id}")
         
-        Args:
-            session: Database session
-            user_id: User ID
-            income_in: Income source data
-            
-        Returns:
-            Created income source
-        """
-        db_source = IncomeSource(
-            id=__import__('uuid').uuid4(),
+        # Map schema field 'name' to db field 'name'
+        source = IncomeSource(
             user_id=user_id,
-            name=income_in.name,
-            type=income_in.type,
-            frequency=income_in.frequency,
-            amount=income_in.amount,
-            currency=income_in.currency,
-            start_date=income_in.start_date,
-            end_date=income_in.end_date,
-            is_recurring=income_in.is_recurring,
-            is_taxable=income_in.is_taxable,
-            tax_category=income_in.tax_category,
-            auto_tax_calculation=income_in.auto_tax_calculation,
-            tax_rate=income_in.tax_rate,
-            notes=income_in.notes,
-            is_active=True
+            name=source_in.name,  # ✅ Map name → name
+            amount=source_in.amount,
+            frequency=source_in.frequency,
+            start_date=source_in.start_date,
+            type=source_in.type,
+            end_date=source_in.end_date,
+            is_active=True,
+            notes=source_in.notes,
+            tax_rate=source_in.tax_rate
         )
-        session.add(db_source)
+        session.add(source)
         await session.commit()
-        await session.refresh(db_source)
-        return IncomeSourceInDB.from_orm(db_source)
-
-    @staticmethod
-    async def get_income_source(
-        session: AsyncSession,
-        user_id: UUID,
-        source_id: UUID
-    ) -> Optional[IncomeSourceInDB]:
-        """Get a single income source."""
-        result = await session.execute(
-            select(IncomeSource).where(
-                and_(
-                    IncomeSource.id == source_id,
-                    IncomeSource.user_id == user_id
-                )
-            )
-        )
-        db_source = result.scalars().first()
-        return IncomeSourceInDB.from_orm(db_source) if db_source else None
-
+        await session.refresh(source)
+        print(f"✅ Created income source: {source.name}")
+        return IncomeSourceInDB.model_validate(source)
+    
     @staticmethod
     async def list_income_sources(
         session: AsyncSession,
@@ -91,47 +60,80 @@ class IncomeService:
         active_only: bool = True
     ) -> List[IncomeSourceInDB]:
         """List all income sources for a user."""
-        query = select(IncomeSource).where(IncomeSource.user_id == user_id)
+        print(f"🔍 list_income_sources called for user: {user_id}")
         
+        query = select(IncomeSource).where(IncomeSource.user_id == user_id)
         if active_only:
             query = query.where(IncomeSource.is_active == True)
-        
         query = query.order_by(IncomeSource.created_at.desc())
+        
         result = await session.execute(query)
         sources = result.scalars().all()
-        return [IncomeSourceInDB.from_orm(s) for s in sources]
-
+        print(f"✅ Found {len(sources)} income sources")
+        return [IncomeSourceInDB.model_validate(s) for s in sources]
+    
+    @staticmethod
+    async def get_income_source(
+        session: AsyncSession,
+        user_id: UUID,
+        source_id: UUID
+    ) -> Optional[IncomeSourceInDB]:
+        """Get a specific income source."""
+        result = await session.execute(
+            select(IncomeSource).where(
+                IncomeSource.id == source_id,
+                IncomeSource.user_id == user_id
+            )
+        )
+        source = result.scalar_one_or_none()
+        return IncomeSourceInDB.model_validate(source) if source else None
+    
     @staticmethod
     async def update_income_source(
         session: AsyncSession,
         user_id: UUID,
         source_id: UUID,
-        income_update: IncomeSourceUpdate
+        source_in: IncomeSourceUpdate
     ) -> Optional[IncomeSourceInDB]:
         """Update an income source."""
+        print(f"🔍 update_income_source called for user: {user_id}, source: {source_id}")
+        
         result = await session.execute(
             select(IncomeSource).where(
-                and_(
-                    IncomeSource.id == source_id,
-                    IncomeSource.user_id == user_id
-                )
+                IncomeSource.id == source_id,
+                IncomeSource.user_id == user_id
             )
         )
-        db_source = result.scalars().first()
-        
-        if not db_source:
+        source = result.scalar_one_or_none()
+        if not source:
+            print(f"❌ Source {source_id} not found")
             return None
         
-        # Update only provided fields
-        update_data = income_update.dict(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(db_source, field, value)
+        # Get update data
+        update_data = source_in.model_dump(exclude_unset=True)
+        print(f"📝 Update data: {update_data}")
         
-        db_source.updated_at = datetime.utcnow()
+        # Handle field name mappings
+        field_mapping = {
+            'name': 'name',  # Map schema 'name' to db 'name'
+        }
+        
+        for field, value in update_data.items():
+            # Check if this field needs mapping
+            db_field = field_mapping.get(field, field)
+            
+            # Set the attribute on the source object
+            if hasattr(source, db_field):
+                setattr(source, db_field, value)
+                print(f"✅ Set {db_field} = {value}")
+            else:
+                print(f"⚠️ Warning: Field {db_field} not found on IncomeSource model")
+        
         await session.commit()
-        await session.refresh(db_source)
-        return IncomeSourceInDB.from_orm(db_source)
-
+        await session.refresh(source)
+        print(f"✅ Updated source: {source.name}")
+        return IncomeSourceInDB.model_validate(source)
+    
     @staticmethod
     async def deactivate_income_source(
         session: AsyncSession,
@@ -141,255 +143,181 @@ class IncomeService:
         """Deactivate (soft delete) an income source."""
         result = await session.execute(
             select(IncomeSource).where(
-                and_(
-                    IncomeSource.id == source_id,
-                    IncomeSource.user_id == user_id
-                )
+                IncomeSource.id == source_id,
+                IncomeSource.user_id == user_id
             )
         )
-        db_source = result.scalars().first()
-        
-        if not db_source:
+        source = result.scalar_one_or_none()
+        if not source:
             return None
         
-        db_source.is_active = False
-        db_source.updated_at = datetime.utcnow()
+        source.is_active = False
         await session.commit()
-        await session.refresh(db_source)
-        return IncomeSourceInDB.from_orm(db_source)
-
-    # =========================================================================
-    # INCOME HISTORY OPERATIONS
-    # =========================================================================
-
+        await session.refresh(source)
+        return IncomeSourceInDB.model_validate(source)
+    
+    # ========================================================================
+    # INCOME HISTORY
+    # ========================================================================
     @staticmethod
     async def record_income(
         session: AsyncSession,
         user_id: UUID,
         income_in: IncomeHistoryCreate
     ) -> IncomeHistoryInDB:
-        """
-        Record actual income (manual entry or auto-generated).
+        """Record actual income received."""
+        # Verify source belongs to user
+        source_result = await session.execute(
+            select(IncomeSource).where(
+                IncomeSource.id == income_in.income_source_id,
+                IncomeSource.user_id == user_id
+            )
+        )
+        source = source_result.scalar_one_or_none()
+        if not source:
+            raise ValueError("Income source not found or does not belong to user")
         
-        Args:
-            session: Database session
-            user_id: User ID
-            income_in: Income history data
-            
-        Returns:
-            Created income history record
-        """
-        # Calculate net amount if tax is provided
-        net_amount = income_in.amount
-        if income_in.tax_amount:
-            net_amount = income_in.amount - income_in.tax_amount
-        
-        db_history = IncomeHistory(
-            id=__import__('uuid').uuid4(),
+        history = IncomeHistory(
             user_id=user_id,
             income_source_id=income_in.income_source_id,
             amount=income_in.amount,
-            currency=income_in.currency,
             received_date=income_in.received_date,
             tax_amount=income_in.tax_amount,
-            net_amount=net_amount,
             notes=income_in.notes,
             is_manual_entry=income_in.is_manual_entry
         )
-        session.add(db_history)
+        session.add(history)
         await session.commit()
-        await session.refresh(db_history)
-        
-        # Update monthly summary
-        await IncomeService._update_monthly_summary(session, user_id, income_in.received_date)
-        
-        return IncomeHistoryInDB.from_orm(db_history)
-
+        await session.refresh(history)
+        return IncomeHistoryInDB.model_validate(history)
+    
     @staticmethod
     async def get_income_history(
         session: AsyncSession,
         user_id: UUID,
         source_id: Optional[UUID] = None,
         start_date: Optional[date] = None,
-        end_date: Optional[date] = None
+        end_date: Optional[date] = None,
+        limit: int = 100
     ) -> List[IncomeHistoryInDB]:
-        """Get income history with optional filters."""
+        """Get income history with filters."""
         query = select(IncomeHistory).where(IncomeHistory.user_id == user_id)
         
         if source_id:
             query = query.where(IncomeHistory.income_source_id == source_id)
-        
         if start_date:
             query = query.where(IncomeHistory.received_date >= start_date)
-        
         if end_date:
             query = query.where(IncomeHistory.received_date <= end_date)
         
-        query = query.order_by(IncomeHistory.received_date.desc())
+        query = query.order_by(IncomeHistory.received_date.desc()).limit(limit)
+        
         result = await session.execute(query)
-        records = result.scalars().all()
-        return [IncomeHistoryInDB.from_orm(r) for r in records]
-
-    # =========================================================================
-    # MONTHLY SUMMARY OPERATIONS
-    # =========================================================================
-
-    @staticmethod
-    async def _update_monthly_summary(
-        session: AsyncSession,
-        user_id: UUID,
-        income_date: date
-    ) -> None:
-        """
-        Update monthly summary for a given date.
-        Called after income record is added/modified.
-        """
-        year = income_date.year
-        month = income_date.month
-        
-        # Get all income history for this month
-        result = await session.execute(
-            select(IncomeHistory).where(
-                and_(
-                    IncomeHistory.user_id == user_id,
-                    func.extract('year', IncomeHistory.received_date) == year,
-                    func.extract('month', IncomeHistory.received_date) == month
-                )
-            )
-        )
-        records = result.scalars().all()
-        
-        # Calculate totals
-        total_income = sum(r.amount for r in records) if records else Decimal('0')
-        total_tax = sum(r.tax_amount or Decimal('0') for r in records) if records else Decimal('0')
-        net_income = total_income - total_tax
-        
-        # Count recurring vs one-time
-        source_ids = {r.income_source_id for r in records}
-        sources_result = await session.execute(
-            select(IncomeSource).where(
-                and_(
-                    IncomeSource.id.in_(source_ids),
-                    IncomeSource.user_id == user_id
-                )
-            )
-        )
-        sources = sources_result.scalars().all()
-        
-        recurring_income = sum(
-            r.amount for r in records
-            if any(s.id == r.income_source_id and s.is_recurring for s in sources)
-        )
-        one_time_income = total_income - recurring_income
-        
-        # Find or create summary
-        summary_result = await session.execute(
-            select(IncomeMonthlySummary).where(
-                and_(
-                    IncomeMonthlySummary.user_id == user_id,
-                    IncomeMonthlySummary.year == year,
-                    IncomeMonthlySummary.month == month
-                )
-            )
-        )
-        summary = summary_result.scalars().first()
-        
-        if summary:
-            # Update existing
-            summary.total_income = total_income
-            summary.total_tax = total_tax
-            summary.net_income = net_income
-            summary.recurring_income = recurring_income
-            summary.one_time_income = one_time_income
-            summary.source_count = len(source_ids)
-            summary.record_count = len(records)
-            summary.updated_at = datetime.utcnow()
-        else:
-            # Create new
-            summary = IncomeMonthlySummary(
-                id=__import__('uuid').uuid4(),
-                user_id=user_id,
-                year=year,
-                month=month,
-                total_income=total_income,
-                total_tax=total_tax,
-                net_income=net_income,
-                recurring_income=recurring_income,
-                one_time_income=one_time_income,
-                source_count=len(source_ids),
-                record_count=len(records)
-            )
-            session.add(summary)
-        
-        await session.commit()
-
+        histories = result.scalars().all()
+        return [IncomeHistoryInDB.model_validate(h) for h in histories]
+    
+    # ========================================================================
+    # INCOME ANALYTICS
+    # ========================================================================
     @staticmethod
     async def get_monthly_summary(
         session: AsyncSession,
         user_id: UUID,
         year: int,
         month: int
-    ) -> Optional[IncomeMonthlySummaryOut]:
+    ) -> IncomeMonthlySummaryOut:
         """Get monthly income summary."""
-        result = await session.execute(
-            select(IncomeMonthlySummary).where(
-                and_(
-                    IncomeMonthlySummary.user_id == user_id,
-                    IncomeMonthlySummary.year == year,
-                    IncomeMonthlySummary.month == month
-                )
-            )
+        start_date = date(year, month, 1)
+        if month == 12:
+            end_date = date(year + 1, 1, 1)
+        else:
+            end_date = date(year, month + 1, 1)
+        
+        # Query for income history in this month
+        query = select(IncomeHistory).where(
+            IncomeHistory.user_id == user_id,
+            IncomeHistory.received_date >= start_date,
+            IncomeHistory.received_date < end_date
         )
-        summary = result.scalars().first()
-        return IncomeMonthlySummaryOut.from_orm(summary) if summary else None
-
-    # =========================================================================
-    # ANALYTICS & PREDICTIONS
-    # =========================================================================
-
+        
+        result = await session.execute(query)
+        histories = result.scalars().all()
+        
+        # Calculate totals
+        total_income = sum(float(h.amount) for h in histories)
+        total_tax = sum(float(h.tax_amount or 0) for h in histories)
+        
+        # Get source counts
+        source_ids = set(h.income_source_id for h in histories)
+        
+        # Separate recurring vs one-time
+        recurring_income = 0
+        one_time_income = 0
+        
+        for h in histories:
+            # Get the source to check if it's recurring
+            source_result = await session.execute(
+                select(IncomeSource).where(IncomeSource.id == h.income_source_id)
+            )
+            source = source_result.scalar_one_or_none()
+            
+            if source and source.is_recurring:
+                recurring_income += float(h.amount)
+            else:
+                one_time_income += float(h.amount)
+        
+        # Return summary with all required fields
+        return IncomeMonthlySummaryOut(
+            id=uuid_pkg.uuid4(),
+            user_id=user_id,
+            year=year,
+            month=month,
+            total_income=total_income,
+            total_tax=total_tax,
+            net_income=total_income - total_tax,
+            recurring_income=recurring_income,
+            one_time_income=one_time_income,
+            source_count=len(source_ids),
+            record_count=len(histories),
+            created_at=datetime.now()
+        )
+    
     @staticmethod
-    async def predict_next_month_income(
+    async def predict_next_month(
         session: AsyncSession,
         user_id: UUID
-    ) -> Decimal:
-        """
-        Predict income for next month based on recurring sources.
-        """
-        # Get all active recurring sources
-        result = await session.execute(
+    ) -> float:
+        """Predict income for next month based on active sources."""
+        # Get all active sources
+        sources_result = await session.execute(
             select(IncomeSource).where(
-                and_(
-                    IncomeSource.user_id == user_id,
-                    IncomeSource.is_recurring == True,
-                    IncomeSource.is_active == True,
-                    IncomeSource.start_date <= date.today()
-                )
+                IncomeSource.user_id == user_id,
+                IncomeSource.is_active == True
             )
         )
-        sources = result.scalars().all()
+        sources = sources_result.scalars().all()
         
-        # Sum recurring amounts
-        predicted = sum(s.amount for s in sources) if sources else Decimal('0')
+        if not sources:
+            return 0.0
         
-        # Add average of one-time income from last 3 months
-        three_months_ago = date.today() - timedelta(days=90)
-        history_result = await session.execute(
-            select(IncomeHistory).where(
-                and_(
-                    IncomeHistory.user_id == user_id,
-                    IncomeHistory.received_date >= three_months_ago,
-                    IncomeHistory.is_manual_entry == False  # Only auto-generated
-                )
-            )
-        )
-        history = history_result.scalars().all()
-        
-        if history:
-            avg_one_time = sum(h.amount for h in history) / len(history) / 3
-            predicted += avg_one_time
+        predicted = 0.0
+        for source in sources:
+            amount = float(source.amount)
+            if source.frequency == "monthly":
+                predicted += amount
+            elif source.frequency == "weekly":
+                predicted += amount * 4.33
+            elif source.frequency == "biweekly":
+                predicted += amount * 2.165
+            elif source.frequency == "quarterly":
+                predicted += amount / 3
+            elif source.frequency == "annually":
+                predicted += amount / 12
+            elif source.frequency == "daily":
+                predicted += amount * 30
         
         return predicted
-
+    
     @staticmethod
     async def get_income_stats(
         session: AsyncSession,
@@ -399,63 +327,99 @@ class IncomeService:
         """Get income statistics for a user."""
         if not year:
             year = date.today().year
-        
-        # Get all income for the year
-        jan_1 = date(year, 1, 1)
-        dec_31 = date(year, 12, 31)
-        
-        history_result = await session.execute(
-            select(IncomeHistory).where(
-                and_(
-                    IncomeHistory.user_id == user_id,
-                    IncomeHistory.received_date >= jan_1,
-                    IncomeHistory.received_date <= dec_31
+
+        try:
+            print(f"📊 Calculating income stats for user {user_id}, year {year}")
+            
+            # Get all income for the year
+            jan_1 = date(year, 1, 1)
+            dec_31 = date(year, 12, 31)
+            
+            # Query all income history for the year
+            query = select(IncomeHistory).where(
+                IncomeHistory.user_id == user_id,
+                IncomeHistory.received_date >= jan_1,
+                IncomeHistory.received_date <= dec_31
+            )
+            result = await session.execute(query)
+            histories = result.scalars().all()
+            
+            # Calculate statistics from history
+            total_income = sum(float(h.amount) for h in histories)
+            total_tax = sum(float(h.tax_amount or 0) for h in histories)
+            monthly_avg = total_income / 12 if total_income > 0 else 0
+            
+            # Get active sources for prediction and counts
+            sources_result = await session.execute(
+                select(IncomeSource).where(
+                    IncomeSource.user_id == user_id,
+                    IncomeSource.is_active == True
                 )
             )
-        )
-        history = history_result.scalars().all()
-        
-        total_annual = sum(h.amount for h in history) if history else Decimal('0')
-        total_tax = sum(h.tax_amount or Decimal('0') for h in history) if history else Decimal('0')
-        net_annual = total_annual - total_tax
-        avg_monthly = total_annual / 12 if total_annual > 0 else Decimal('0')
-        
-        # Get sources breakdown
-        source_ids = {h.income_source_id for h in history}
-        if source_ids:
-            sources_result = await session.execute(
-                select(IncomeSource).where(IncomeSource.id.in_(source_ids))
-            )
-            sources = sources_result.scalars().all()
+            all_sources = sources_result.scalars().all()
             
-            recurring_count = sum(1 for s in sources if s.is_recurring)
-            one_time_count = len(sources) - recurring_count
-            
-            # Find top source
-            top_source = max(
-                [(s, sum(h.amount for h in history if h.income_source_id == s.id)) for s in sources],
-                key=lambda x: x[1],
-                default=(None, Decimal('0'))
-            )
-        else:
+            # Calculate prediction and counts
+            predicted = 0.0
             recurring_count = 0
             one_time_count = 0
-            top_source = (None, Decimal('0'))
-        
-        # Predict next month
-        next_month = await IncomeService.predict_next_month_income(session, user_id)
-        
-        return IncomeStats(
-            total_annual_income=total_annual,
-            average_monthly_income=avg_monthly,
-            predicted_next_month=next_month,
-            total_tax_paid=total_tax,
-            net_annual_income=net_annual,
-            recurring_income_count=recurring_count,
-            one_time_income_count=one_time_count,
-            top_source_name=top_source[0].name if top_source[0] else None,
-            top_source_amount=top_source[1]
-        )
-
-
-
+            
+            # Find top source by amount
+            top_name = "None"
+            top_source_amount = 0
+            
+            for source in all_sources:
+                # Count source types
+                if source.is_recurring:
+                    recurring_count += 1
+                else:
+                    one_time_count += 1
+                
+                # Track top source
+                amount = float(source.amount)
+                if amount > top_source_amount:
+                    top_source_amount = amount
+                    top_name = source.name
+                
+                # Prediction calculation
+                if source.frequency == "monthly":
+                    predicted += amount
+                elif source.frequency == "weekly":
+                    predicted += amount * 4.33
+                elif source.frequency == "biweekly":
+                    predicted += amount * 2.165
+                elif source.frequency == "quarterly":
+                    predicted += amount / 3
+                elif source.frequency == "annually":
+                    predicted += amount / 12
+                elif source.frequency == "daily":
+                    predicted += amount * 30
+                else:
+                    predicted += amount
+            
+            return IncomeStats(
+                total_annual_income=total_income,
+                average_monthly_income=monthly_avg,
+                predicted_next_month=predicted,
+                total_tax_paid=total_tax,
+                net_annual_income=total_income - total_tax,
+                recurring_income_count=recurring_count,
+                one_time_income_count=one_time_count,
+                top_name=top_name,
+                top_source_amount=top_source_amount
+            )
+            
+        except Exception as e:
+            print(f"❌ Error in get_income_stats: {e}")
+            import traceback
+            traceback.print_exc()
+            return IncomeStats(
+                total_annual_income=0,
+                average_monthly_income=0,
+                predicted_next_month=0,
+                total_tax_paid=0,
+                net_annual_income=0,
+                recurring_income_count=0,
+                one_time_income_count=0,
+                top_name="None",
+                top_source_amount=0
+            )

@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import logging
 import time
+import asyncio
 from typing import Dict, Any
 
 from app.core.config import settings
@@ -28,6 +29,9 @@ from app.middleware.metrics import MetricsMiddleware, metrics_endpoint
 from app.core.logging_config import logger, RequestContext, log_request
 from app.core.limiter import limiter, rate_limit_handler
 from app.middleware.security import SecurityHeadersMiddleware
+
+# Import recurring income job
+from app.jobs.recurring_income import recurring_income_job
 
 # Optional Sentry import
 try:
@@ -68,6 +72,13 @@ async def lifespan(app: FastAPI):
         if redis_client:
             logger.info("cache_service_initialized", status="success")
         
+        # ============================================================
+        # START RECURRING INCOME BACKGROUND JOB
+        # ============================================================
+        logger.info("starting_recurring_income_job")
+        asyncio.create_task(recurring_income_job.run_daily())
+        logger.info("recurring_income_job_started")
+        
         startup_time = (time.time() - start_time) * 1000
         logger.info("startup_complete", duration_ms=round(startup_time, 2))
         
@@ -80,6 +91,14 @@ async def lifespan(app: FastAPI):
     finally:
         # Shutdown
         logger.info("shutting_down", phase="shutdown")
+        
+        # ============================================================
+        # STOP RECURRING INCOME JOB
+        # ============================================================
+        logger.info("stopping_recurring_income_job")
+        recurring_income_job.stop()
+        logger.info("recurring_income_job_stopped")
+        
         await CacheService.close()
         logger.info("shutdown_complete")
 
