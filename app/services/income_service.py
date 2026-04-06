@@ -324,32 +324,14 @@ class IncomeService:
         user_id: UUID,
         year: Optional[int] = None
     ) -> IncomeStats:
-        """Get income statistics for a user."""
+        """Get income statistics for a user - FIXED to use history for all calculations."""
         if not year:
             year = date.today().year
 
         try:
             print(f"📊 Calculating income stats for user {user_id}, year {year}")
             
-            # Get all income for the year
-            jan_1 = date(year, 1, 1)
-            dec_31 = date(year, 12, 31)
-            
-            # Query all income history for the year
-            query = select(IncomeHistory).where(
-                IncomeHistory.user_id == user_id,
-                IncomeHistory.received_date >= jan_1,
-                IncomeHistory.received_date <= dec_31
-            )
-            result = await session.execute(query)
-            histories = result.scalars().all()
-            
-            # Calculate statistics from history
-            total_income = sum(float(h.amount) for h in histories)
-            total_tax = sum(float(h.tax_amount or 0) for h in histories)
-            monthly_avg = total_income / 12 if total_income > 0 else 0
-            
-            # Get active sources for prediction and counts
+            # Get all active sources for counts
             sources_result = await session.execute(
                 select(IncomeSource).where(
                     IncomeSource.user_id == user_id,
@@ -358,54 +340,92 @@ class IncomeService:
             )
             all_sources = sources_result.scalars().all()
             
-            # Calculate prediction and counts
+            # Get all income history for the year
+            jan_1 = date(year, 1, 1)
+            dec_31 = date(year, 12, 31)
+            
+            history_query = select(IncomeHistory).where(
+                IncomeHistory.user_id == user_id,
+                IncomeHistory.received_date >= jan_1,
+                IncomeHistory.received_date <= dec_31
+            )
+            history_result = await session.execute(history_query)
+            histories = history_result.scalars().all()
+            
+            # Calculate statistics from history (NOT from sources)
+            total_income = sum(float(h.amount) for h in histories)
+            total_tax = sum(float(h.tax_amount or 0) for h in histories)
+            
+            # Calculate monthly average from history
+            if histories:
+                # Get unique months with data
+                months_with_data = len(set((h.received_date.year, h.received_date.month) for h in histories))
+                monthly_avg = total_income / months_with_data if months_with_data > 0 else 0
+            else:
+                monthly_avg = 0
+            
+            # Calculate per-source totals from history
+            source_totals = {}
+            for h in histories:
+                source_id = str(h.income_source_id)
+                source_totals[source_id] = source_totals.get(source_id, 0) + float(h.amount)
+            
+            # Find top source from history
+            top_source_id = None
+            top_source_amount = 0
+            for source_id, amount in source_totals.items():
+                if amount > top_source_amount:
+                    top_source_amount = amount
+                    top_source_id = source_id
+            
+            # Get top source name
+            top_name = "None"
+            if top_source_id and all_sources:
+                # Convert string ID back to UUID for comparison
+                from uuid import UUID
+                top_uuid = UUID(top_source_id) if isinstance(top_source_id, str) else top_source_id
+                top_source = next((s for s in all_sources if s.id == top_uuid), None)
+                if top_source:
+                    top_name = top_source.name
+            
+            # Calculate prediction from recurring sources
             predicted = 0.0
             recurring_count = 0
             one_time_count = 0
-            
-            # Find top source by amount
-            top_name = "None"
-            top_source_amount = 0
             
             for source in all_sources:
                 # Count source types
                 if source.is_recurring:
                     recurring_count += 1
+                    # Only include recurring sources in prediction
+                    amount = float(source.amount)
+                    if source.frequency == "monthly":
+                        predicted += amount
+                    elif source.frequency == "weekly":
+                        predicted += amount * 4.33
+                    elif source.frequency == "biweekly":
+                        predicted += amount * 2.165
+                    elif source.frequency == "quarterly":
+                        predicted += amount / 3
+                    elif source.frequency == "annually":
+                        predicted += amount / 12
+                    elif source.frequency == "daily":
+                        predicted += amount * 30
+                    else:
+                        predicted += amount
                 else:
                     one_time_count += 1
-                
-                # Track top source
-                amount = float(source.amount)
-                if amount > top_source_amount:
-                    top_source_amount = amount
-                    top_name = source.name
-                
-                # Prediction calculation
-                if source.frequency == "monthly":
-                    predicted += amount
-                elif source.frequency == "weekly":
-                    predicted += amount * 4.33
-                elif source.frequency == "biweekly":
-                    predicted += amount * 2.165
-                elif source.frequency == "quarterly":
-                    predicted += amount / 3
-                elif source.frequency == "annually":
-                    predicted += amount / 12
-                elif source.frequency == "daily":
-                    predicted += amount * 30
-                else:
-                    predicted += amount
             
             return IncomeStats(
-                total_annual_income=total_income,
-                average_monthly_income=monthly_avg,
-                predicted_next_month=predicted,
-                total_tax_paid=total_tax,
-                net_annual_income=total_income - total_tax,
+                total_annual_income=round(total_income, 2),
+                average_monthly_income=round(monthly_avg, 2),
+                predicted_next_month=round(predicted, 2),
+                total_tax_paid=round(total_tax, 2),
+                net_annual_income=round(total_income - total_tax, 2),
                 recurring_income_count=recurring_count,
                 one_time_income_count=one_time_count,
-                top_name=top_name,
-                top_source_amount=top_source_amount
+                top_source_name=top_name,
+                top_source_amount=round(top_source_amount, 2)
             )
             
         except Exception as e:
@@ -420,6 +440,6 @@ class IncomeService:
                 net_annual_income=0,
                 recurring_income_count=0,
                 one_time_income_count=0,
-                top_name="None",
+                top_source_name="None",
                 top_source_amount=0
             )

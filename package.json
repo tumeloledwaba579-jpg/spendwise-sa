@@ -9,14 +9,20 @@
     "fix-encodings": "git ls-files | xargs -I {} sh -c 'iconv -f utf-8 -t utf-8 {} > {}.tmp && mv {}.tmp {}'",
     "precommit": "npm run check-encodings"
   },
-  "keywords": ["finance", "personal-finance", "budgeting"],
+  "keywords": [
+    "finance",
+    "personal-finance",
+    "budgeting"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.6.7",
+    "chart.js": "^4.5.1",
     "next": "^14.0.4",
     "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.2.0",
     "recharts": "^3.7.0"
   }

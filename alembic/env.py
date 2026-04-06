@@ -20,6 +20,24 @@ if config.config_file_name is not None:
 # Set the target metadata for autogenerate
 target_metadata = Base.metadata
 
+# Add this function to verify migrations before running
+def run_migrations_online():
+    """Run migrations in 'online' mode."""
+    
+    # Verify all migration files have proper down_revision
+    from alembic.script import ScriptDirectory
+    script = ScriptDirectory.from_config(config)
+    heads = script.get_heads()
+    
+    if len(heads) > 1:
+        raise Exception(f"Multiple heads detected: {heads}. Merge them first!")
+    
+    print(f"✅ Current head: {heads[0] if heads else 'None'}")
+    
+    # Rest of your existing code...
+    connectable = engine_from_config(...)
+    # ...
+
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(

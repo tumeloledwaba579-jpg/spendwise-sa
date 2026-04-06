@@ -102,8 +102,7 @@ export default function HomePage() {
   return (
     <div className="landing-page">
       {/* Navigation */}
-      <nav className={
-avbar }>
+<nav className="navbar">
         <div className="nav-container">
           <Link href="/" className="logo">
             <span className="logo-icon">ðŸ’°</span>

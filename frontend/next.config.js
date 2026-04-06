@@ -11,7 +11,7 @@ const nextConfig = {
       '@phosphor-icons/react',
       'date-fns',
     ],
-    turbopackMemoryLimit: 4096,
+    turbopackMemoryLimit: 5096,
   },
 };
 

@@ -3,11 +3,10 @@ Optimized transaction service with batched operations and connection pooling.
 """
 from uuid import UUID
 from decimal import Decimal
-from typing import Optional, List, Dict, Any  # Added Optional here!
-from datetime import datetime, date  # Added for date handling
+from typing import Optional, List, Dict, Any
+from datetime import datetime, date
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, and_, or_, func, desc  # Added more SQL functions
-from sqlalchemy.sql import func
+from sqlalchemy import select, update, and_, or_, func, desc
 import logging
 
 from app.models.transaction import Transaction
@@ -26,7 +25,7 @@ class TransactionService:
     async def get_transactions(
         self,
         user_id: UUID,
-        account_id: Optional[UUID] = None,  # ✅ Now Optional is defined
+        account_id: Optional[UUID] = None,
         category_id: Optional[UUID] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -96,28 +95,30 @@ class TransactionService:
             if not category or category.user_id != user_id:
                 raise ValueError("Category not found or does not belong to user")
         
+        # ✅ Convert amount to Decimal to avoid type errors
+        amount_decimal = Decimal(str(abs(transaction_in.amount)))
+        is_income = transaction_in.amount > 0
+        
         # Create transaction
         transaction = Transaction(
             user_id=user_id,
             account_id=transaction_in.account_id,
             category_id=transaction_in.category_id,
-            amount=transaction_in.amount,
+            amount=amount_decimal,  # ✅ Store as Decimal
             description=transaction_in.description,
-            transaction_date=transaction_in.transaction_date or datetime.now().date(),
-            transaction_type=transaction_in.transaction_type,
+            transaction_date=transaction_in.transaction_date or datetime.now(),
+            transaction_type="income" if is_income else "expense",
             notes=transaction_in.notes,
             is_recurring=transaction_in.is_recurring or False,
-            recurring_frequency=transaction_in.recurring_frequency,
-            tags=transaction_in.tags
         )
         
         self.db.add(transaction)
         
-        # Update account balance
-        if transaction_in.transaction_type == "income":
-            account.balance += transaction_in.amount
-        else:  # expense
-            account.balance -= transaction_in.amount
+        # ✅ Update account balance using Decimal
+        if is_income:
+            account.balance += amount_decimal
+        else:
+            account.balance -= amount_decimal
         
         await self.db.commit()
         await self.db.refresh(transaction)
@@ -136,10 +137,40 @@ class TransactionService:
         if not transaction:
             return None
         
+        # Get old amount and type for balance adjustment
+        old_amount = transaction.amount
+        old_type = transaction.transaction_type
+        
         # Update fields if provided
         update_data = transaction_in.model_dump(exclude_unset=True)
+        
+        # ✅ Handle amount specially - convert to Decimal
+        if 'amount' in update_data:
+            amount_float = update_data['amount']
+            amount_decimal = Decimal(str(abs(amount_float)))
+            update_data['amount'] = amount_decimal
+            is_income = amount_float > 0
+            update_data['transaction_type'] = "income" if is_income else "expense"
+        
+        # Apply updates
         for field, value in update_data.items():
             setattr(transaction, field, value)
+        
+        # ✅ Update account balance if amount or type changed
+        if 'amount' in update_data or 'transaction_type' in update_data:
+            account = await self.db.get(Account, transaction.account_id)
+            if account:
+                # Revert old transaction effect
+                if old_type == "income":
+                    account.balance -= old_amount
+                else:
+                    account.balance += old_amount
+                
+                # Apply new transaction effect
+                if transaction.transaction_type == "income":
+                    account.balance += transaction.amount
+                else:
+                    account.balance -= transaction.amount
         
         await self.db.commit()
         await self.db.refresh(transaction)
@@ -157,7 +188,7 @@ class TransactionService:
         if not transaction:
             return False
         
-        # Revert account balance
+        # Revert account balance based on stored type
         account = await self.db.get(Account, transaction.account_id)
         if account:
             if transaction.transaction_type == "income":
@@ -188,16 +219,16 @@ class TransactionService:
         result = await self.db.execute(query)
         transactions = result.scalars().all()
         
-        # Calculate summary
-        total_income = sum(t.amount for t in transactions if t.transaction_type == "income")
-        total_expenses = sum(t.amount for t in transactions if t.transaction_type == "expense")
+        # Calculate using stored transaction_type
+        total_income = sum(float(t.amount) for t in transactions if t.transaction_type == "income")
+        total_expenses = sum(float(t.amount) for t in transactions if t.transaction_type == "expense")
         
         return {
             "total_transactions": len(transactions),
-            "total_income": total_income,
-            "total_expenses": total_expenses,
-            "net_income": total_income - total_expenses,
-            "average_transaction": (total_income + total_expenses) / len(transactions) if transactions else 0,
-            "start_date": start_date,
-            "end_date": end_date
+            "total_income": float(total_income),
+            "total_expenses": float(total_expenses),
+            "net_income": float(total_income - total_expenses),
+            "average_transaction": float((total_income + total_expenses) / len(transactions)) if transactions else 0,
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None
         }

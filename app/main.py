@@ -9,7 +9,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 import logging
 import time
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from app.core.config import settings
 from app.services.cache_service import CacheService
@@ -31,7 +31,7 @@ from app.core.limiter import limiter, rate_limit_handler
 from app.middleware.security import SecurityHeadersMiddleware
 
 # Import recurring income job
-from app.jobs.recurring_income import recurring_income_job
+from app.jobs.recurring_income_job import recurring_income_job
 
 # Optional Sentry import
 try:
@@ -76,7 +76,14 @@ async def lifespan(app: FastAPI):
         # START RECURRING INCOME BACKGROUND JOB
         # ============================================================
         logger.info("starting_recurring_income_job")
+        
+        # Start the recurring income job to run daily
+        # This will check for and create recurring income entries
         asyncio.create_task(recurring_income_job.run_daily())
+        
+        # Also run once immediately on startup to catch any missed entries
+        asyncio.create_task(run_initial_recurring_income())
+        
         logger.info("recurring_income_job_started")
         
         startup_time = (time.time() - start_time) * 1000
@@ -102,6 +109,17 @@ async def lifespan(app: FastAPI):
         await CacheService.close()
         logger.info("shutdown_complete")
 
+
+async def run_initial_recurring_income():
+    """Run the recurring income job once on startup."""
+    try:
+        logger.info("running_initial_recurring_income_check")
+        await recurring_income_job.process_recurring_income()
+        logger.info("initial_recurring_income_check_complete")
+    except Exception as e:
+        logger.error("initial_recurring_income_check_failed", error=str(e))
+
+
 async def startup_validation():
     """Run essential startup validation."""
     try:
@@ -111,6 +129,7 @@ async def startup_validation():
     except Exception as e:
         logger.error("startup_validation_failed", error=str(e))
         raise
+
 
 def create_application() -> FastAPI:
     """Create and configure the FastAPI application."""
@@ -132,8 +151,31 @@ def create_application() -> FastAPI:
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     logger.info("gzip_middleware_configured")
     
-    # 2. CORS
-    cors_origins = settings.cors_origins
+    # 2. CORS - FIXED WITH DEBUGGING
+    # Get CORS origins from settings
+    cors_origins = getattr(settings, 'cors_origins', [])
+    
+    # Print debug info
+    print("\n" + "="*60)
+    print(f"🔍 CORS CONFIGURATION DEBUG:")
+    print("="*60)
+    print(f"Raw BACKEND_CORS_ORIGINS: {getattr(settings, 'BACKEND_CORS_ORIGINS', 'NOT SET')}")
+    print(f"Parsed cors_origins: {cors_origins}")
+    print("="*60 + "\n")
+    
+    # If cors_origins is empty or None, use a safe default
+    if not cors_origins:
+        print("⚠️ WARNING: cors_origins is empty! Using default ['http://localhost:3000']")
+        cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    
+    # Make sure it's a list
+    if isinstance(cors_origins, str):
+        try:
+            import json
+            cors_origins = json.loads(cors_origins)
+        except:
+            cors_origins = [cors_origins]
+    
     logger.info("cors_configured", origins=cors_origins)
     app.add_middleware(
         CORSMiddleware,
@@ -265,6 +307,7 @@ def create_application() -> FastAPI:
 
     logger.info("application_created", version="3.0.0", environment=settings.ENVIRONMENT)
     return app
+
 
 # Create the application instance
 app = create_application()

@@ -1,0 +1,74 @@
+/* Card Component Styles */
+.card {
+    background-color: var(--surface-container-lowest);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+    overflow: hidden;
+}
+
+/* Variants */
+.card-default {
+    border: 1px solid var(--outline-variant);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-elevated {
+    box-shadow: var(--shadow-md);
+    border: none;
+}
+
+.card-elevated:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.card-outlined {
+    border: 1px solid var(--outline);
+    background-color: transparent;
+}
+
+/* Clickable */
+.card-clickable {
+    cursor: pointer;
+}
+
+.card-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Padding variants */
+.card-padding-none {
+    padding: 0;
+}
+
+.card-padding-small {
+    padding: var(--spacing-md);
+}
+
+.card-padding-medium {
+    padding: var(--spacing-lg);
+}
+
+.card-padding-large {
+    padding: var(--spacing-xl);
+}
+
+/* Dark mode adjustments */
+.dark .card-default {
+    background-color: var(--surface-container-lowest);
+}
+
+.dark .card-outlined {
+    background-color: transparent;
+}
+
+/* Responsive padding */
+@media (max-width: 768px) {
+    .card-padding-medium {
+        padding: var(--spacing-md);
+    }
+
+    .card-padding-large {
+        padding: var(--spacing-lg);
+    }
+}

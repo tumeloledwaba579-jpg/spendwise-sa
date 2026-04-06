@@ -1,38 +1,50 @@
 """
-Database configuration with connection pooling.
+Database configuration for SpendWise API.
 """
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from app.core.config import settings
+from sqlalchemy.ext.asyncio import (
+    AsyncSession, 
+    create_async_engine, 
+    async_sessionmaker,
+    AsyncEngine
+)
+from sqlalchemy.orm import declarative_base
+import os
+from typing import AsyncGenerator
 
-# Optimized engine with connection pooling
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=False,  # Disable echo in production
-    pool_size=20,           # Increased from default
-    max_overflow=10,        # Allow burst connections
-    pool_pre_ping=True,     # Verify connections before using
-    pool_recycle=3600,      # Recycle after 1 hour
-    pool_timeout=30         # Wait up to 30 seconds for connection
+# Get database URL from environment
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql+asyncpg://postgres:root123@localhost:5432/spendwise_db"
+)
+
+# Create async engine
+engine: AsyncEngine = create_async_engine(
+    DATABASE_URL,
+    echo=True,  # Set to False in production
+    pool_size=5,
+    max_overflow=10
 )
 
 # Create async session factory
-async_session = sessionmaker(
+AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False
 )
 
-async def get_db() -> AsyncSession:
+# Alias for backward compatibility
+async_session = AsyncSessionLocal
+
+# Base class for models
+Base = declarative_base()
+
+# Dependency to get DB session
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Dependency to get database session.
+    Dependency function that yields database sessions.
     """
-    async with async_session() as session:
+    async with AsyncSessionLocal() as session:
         try:
             yield session
         finally:
             await session.close()
-
-async def close_db():
-    """Close database connection pool."""
-    await engine.dispose()

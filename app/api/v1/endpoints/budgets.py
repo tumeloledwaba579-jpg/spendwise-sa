@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.models.budget import Budget, BudgetPeriod
 from app.models.user import User
 from app.models.category import Category
-from app.api.deps import get_current_user
+from app.api.v1.deps_cookie import get_current_user
 from app.schemas.budget import BudgetCreate, BudgetUpdate, BudgetOut
 
 router = APIRouter(prefix="/budgets", tags=["budgets"])

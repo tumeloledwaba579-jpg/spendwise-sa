@@ -18,6 +18,8 @@ class TransactionBase(BaseModel):
     is_transfer: bool = Field(default=False)
     is_recurring: bool = Field(default=False)
     recurrence_rule: Optional[str] = Field(None, description="Recurrence rule (e.g., 'MONTHLY')")
+    # ✅ ADD THIS LINE - Include transaction_type
+    transaction_type: str = Field(..., description="Type of transaction: 'income' or 'expense'")
 
     @validator('account_id', 'category_id', pre=True)
     def convert_uuid_to_str(cls, v):
@@ -27,6 +29,16 @@ class TransactionBase(BaseModel):
         if isinstance(v, UUID):
             return str(v)
         return v
+
+    @validator('transaction_type', pre=True)
+    def validate_transaction_type(cls, v):
+        """Validate transaction_type is either 'income' or 'expense'."""
+        if v is None:
+            return v
+        v_lower = v.lower()
+        if v_lower not in ['income', 'expense']:
+            raise ValueError(f"transaction_type must be 'income' or 'expense', got '{v}'")
+        return v_lower
 
 class TransactionCreate(TransactionBase):
     """Schema for creating a new transaction."""
@@ -44,6 +56,8 @@ class TransactionUpdate(BaseModel):
     is_transfer: Optional[bool] = None
     is_recurring: Optional[bool] = None
     recurrence_rule: Optional[str] = None
+    # ✅ ADD THIS LINE
+    transaction_type: Optional[str] = Field(None, description="Type of transaction: 'income' or 'expense'")
 
     @validator('account_id', 'category_id', pre=True)
     def convert_uuid_to_str(cls, v):
@@ -53,6 +67,16 @@ class TransactionUpdate(BaseModel):
         if isinstance(v, UUID):
             return str(v)
         return v
+
+    @validator('transaction_type', pre=True)
+    def validate_transaction_type(cls, v):
+        """Validate transaction_type is either 'income' or 'expense' if provided."""
+        if v is None:
+            return v
+        v_lower = v.lower()
+        if v_lower not in ['income', 'expense']:
+            raise ValueError(f"transaction_type must be 'income' or 'expense', got '{v}'")
+        return v_lower
 
 class TransactionOut(TransactionBase):
     """Schema for transaction response."""

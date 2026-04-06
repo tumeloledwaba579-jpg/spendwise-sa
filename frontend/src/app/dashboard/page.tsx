@@ -1,83 +1,62 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import './dashboard.css';
+import { fetchAndValidateArray, fetchAndValidate } from '@/lib/api';
+import {
+  AccountSchema,
+  TransactionSchema,
+  IncomeStatsSchema,
+  IncomeHistorySchema,
+  CategorySchema,
+  type Account,
+  type Transaction,
+  type IncomeStats,
+  type IncomeHistory,
+  type Category,
+} from '@/lib/schemas';
+import './fintrack.css';
 
-// Icons as components for better performance
-const Icons = {
-  Dashboard: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h4l2-9 2 9h4l-3 5 2 4-5-2-5 2 2-4-3-5z" /></svg>,
-  Income: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 7l-5-5-5 5M7 17l5 5 5-5"/></svg>,
-  Expenses: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M7 7l5-5 5 5M17 17l-5 5-5-5"/></svg>,
-  Budget: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8v8H8z"/></svg>,
-  Reports: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4"/><path d="M15 4h5v5"/><path d="M9 15l3-3 3 3 4-4"/></svg>,
-  Bell: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-  Settings: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-  Logout: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-  TrendingUp: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8 10 1 17"/><polyline points="17 6 23 6 23 12"/></svg>,
-  TrendingDown: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 18 13.5 8.5 8 14 1 7"/><polyline points="17 18 23 18 23 12"/></svg>,
-  PiggyBank: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><circle cx="16" cy="9" r="1"/></svg>,
-  Flag: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>,
-  TrendingUpZA: () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 6l-9.5 9.5-5.5-5.5-7 7" stroke="#F44336"/><path d="M17 6l6 6" stroke="#00C853"/><circle cx="21" cy="3" r="2" fill="#FDD835" stroke="none"/></svg>,
-};
-
-interface FinancialStats {
-  totalBalance: number;
-  monthlyIncome: number;
-  monthlyExpenses: number;
-  savingsRate: number;
-  previousMonthIncome?: number;
-  previousMonthExpenses?: number;
-  topCategory?: string;
-  budgetStatus?: { onTrack: number; overBudget: number };
-}
-
-interface RecentActivity {
+interface UIRecentTransaction {
   id: string;
   title: string;
-  description: string;
+  category: string;
+  date: string;
   amount: number;
   type: 'income' | 'expense';
-  time: string;
-  date: string;
-  category?: string;
-  icon?: string;
+  status: string;
+  icon: string;
+  transaction_date?: string;
 }
 
-interface IncomeStats {
-  total_annual_income: number;
-  average_monthly_income: number;
-  predicted_next_month: number;
-  total_tax_paid: number;
-  net_annual_income: number;
-  recurring_income_count: number;
-  one_time_income_count: number;
-  top_source_name: string;
-  top_source_amount: number;
-}
-
-interface Category {
+interface UIBudget {
   id: string;
   name: string;
-  color: string;
-  budget?: number;
-  spent?: number;
+  amount: number;
+  spent: number;
+  remaining: number;
+  percentage: number;
+  category_id: string;
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user, logout, isLoading: authLoading } = useAuth();
-  const [stats, setStats] = useState<FinancialStats | null>(null);
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const { user, isLoading: authLoading } = useAuth();
+  const [greeting, setGreeting] = useState('Good morning');
+
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [assetsTotal, setAssetsTotal] = useState(0);
+  const [liabilitiesTotal, setLiabilitiesTotal] = useState(0);
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
+  const [monthlyExpenses, setMonthlyExpenses] = useState(0);
+  const [savingsRate, setSavingsRate] = useState(0);
   const [incomeStats, setIncomeStats] = useState<IncomeStats | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<UIRecentTransaction[]>([]);
+  const [budgets, setBudgets] = useState<UIBudget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [greeting, setGreeting] = useState('');
+  const [connectionError, setConnectionError] = useState(false);
 
-  // Set greeting based on time of day
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Good morning');
@@ -86,714 +65,515 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
+    if (!authLoading && user) fetchDashboardData();
+  }, [user, authLoading]);
 
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user, authLoading, router]);
+  // ── Formatters ──────────────────────────────────────────
 
-const fetchDashboardData = async () => {
-  setIsLoading(true);
-  setError(null);
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', minimumFractionDigits: 2 }).format(amount);
 
-  try {
-    const fetchOptions = {
-      credentials: 'include' as RequestCredentials,
-      headers: { 'Content-Type': 'application/json' }
-    };
-
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-
-    console.log('📊 Fetching dashboard data...');
-    console.log(`Current period: ${currentYear}-${currentMonth}`);
-    console.log(`Last month period: ${lastMonthYear}-${lastMonth}`);
-
-    // Fetch all data in parallel
-    const [
-      accountsRes,
-      transactionsRes,
-      incomeStatsRes,
-      categoriesRes
-    ] = await Promise.allSettled([
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/`, fetchOptions),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/transactions/?limit=100`, fetchOptions),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/stats/?year=${currentYear}`, fetchOptions),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/categories/`, fetchOptions)
-    ]);
-
-    // Process accounts
-    let accounts: any[] = [];
-    if (accountsRes.status === 'fulfilled' && accountsRes.value.ok) {
-      accounts = await accountsRes.value.json();
-      console.log('✅ Accounts loaded:', accounts.length);
-    } else {
-      console.warn('⚠️ Accounts not available');
-    }
-
-    // Process transactions with detailed debugging
-    let transactions: any[] = [];
-    if (transactionsRes.status === 'fulfilled' && transactionsRes.value.ok) {
-      transactions = await transactionsRes.value.json();
-      console.log('✅ Transactions loaded:', transactions.length);
-      
-      // 🔍 DETAILED DEBUGGING - Show all transactions
-      console.log('📅 Current date:', now.toISOString());
-      console.log('📅 Looking for month:', currentMonth, 'Year:', currentYear);
-      
-      if (transactions.length > 0) {
-        transactions.forEach((t: any, index: number) => {
-          const txDate = new Date(t.transaction_date || t.date);
-          const txMonth = txDate.getMonth() + 1;
-          const txYear = txDate.getFullYear();
-          
-          console.log(`Transaction ${index + 1}:`, {
-            id: t.id,
-            description: t.description || 'No description',
-            amount: t.amount,
-            type: t.type,
-            date: t.transaction_date || t.date,
-            parsedDate: txDate.toISOString(),
-            month: txMonth,
-            year: txYear,
-            isCurrentMonth: txMonth === currentMonth && txYear === currentYear
-          });
-        });
-      } else {
-        console.log('⚠️ No transactions found');
-      }
-    } else {
-      console.warn('⚠️ Transactions not available');
-      if (transactionsRes.status === 'rejected') {
-        console.error('Transactions fetch rejected:', transactionsRes.reason);
-      } else if (transactionsRes.value && !transactionsRes.value.ok) {
-        console.error('Transactions fetch failed with status:', transactionsRes.value.status);
-      }
-    }
-
-    // Process income stats
-    let incomeData: IncomeStats | null = null;
-    if (incomeStatsRes.status === 'fulfilled' && incomeStatsRes.value.ok) {
-      incomeData = await incomeStatsRes.value.json();
-      setIncomeStats(incomeData);
-      console.log('✅ Income stats loaded:', incomeData);
-    } else {
-      console.warn('⚠️ Income stats not available');
-    }
-
-    // Process categories
-    if (categoriesRes.status === 'fulfilled' && categoriesRes.value.ok) {
-      const data = await categoriesRes.value.json();
-      setCategories(data.slice(0, 5));
-      console.log('✅ Categories loaded:', data.length);
-    } else {
-      console.warn('⚠️ Categories not available - 404 is expected if endpoint doesn\'t exist');
-    }
-
-    // Calculate total balance from accounts
-    const totalBalance = accounts.reduce((sum: number, acc: any) => 
-      sum + parseFloat(acc.balance || 0), 0);
-    console.log('💰 Total balance:', totalBalance);
-
-    // ============================================================
-    // GET CURRENT MONTH TRANSACTIONS
-    // ============================================================
-    const currentMonthTransactions = transactions.filter((t: any) => {
-      const txDate = new Date(t.transaction_date || t.date);
-      const txMonth = txDate.getMonth() + 1;
-      const txYear = txDate.getFullYear();
-      return txMonth === currentMonth && txYear === currentYear;
-    });
-
-    console.log(`📊 Found ${currentMonthTransactions.length} transactions for ${currentYear}-${currentMonth}`);
-
-    // ============================================================
-    // GET LAST MONTH TRANSACTIONS FOR COMPARISON
-    // ============================================================
-    const lastMonthTransactions = transactions.filter((t: any) => {
-      const txDate = new Date(t.transaction_date || t.date);
-      const txMonth = txDate.getMonth() + 1;
-      const txYear = txDate.getFullYear();
-      return txMonth === lastMonth && txYear === lastMonthYear;
-    });
-
-    // ============================================================
-    // CALCULATE MONTHLY INCOME AND EXPENSES - USING ONLY REAL DATA
-    // ============================================================
-
-    let monthlyIncome = 0;
-    let monthlyExpenses = 0;
-
-    if (currentMonthTransactions.length > 0) {
-      // Use actual transactions if available
-      console.log('📊 Using actual transactions for monthly data');
-      
-      monthlyIncome = currentMonthTransactions
-        .filter((t: any) => {
-          const amount = parseFloat(t.amount);
-          return amount > 0 || t.type === 'income';
-        })
-        .reduce((sum: number, t: any) => {
-          const amount = Math.abs(parseFloat(t.amount));
-          console.log(`💰 Income: ${t.description || 'Unknown'} - R${amount}`);
-          return sum + amount;
-        }, 0);
-
-      monthlyExpenses = currentMonthTransactions
-        .filter((t: any) => {
-          const amount = parseFloat(t.amount);
-          return amount < 0 || t.type === 'expense';
-        })
-        .reduce((sum: number, t: any) => {
-          const amount = Math.abs(parseFloat(t.amount));
-          console.log(`💸 Expense: ${t.description || 'Unknown'} - R${amount}`);
-          return sum + amount;
-        }, 0);
-    } else if (incomeData) {
-      // Use income stats for income only - NO HARDCODED EXPENSES
-      console.log('📊 No current month transactions, using income stats for income only');
-      console.log('📊 Expenses set to 0 since no actual expense data exists');
-      
-      monthlyIncome = parseFloat(incomeData.average_monthly_income.toString()) || 0;
-      monthlyExpenses = 0; // No expenses in current month
-      
-    } else {
-      console.log('⚠️ No transaction data and no income stats available');
-      monthlyIncome = 0;
-      monthlyExpenses = 0;
-    }
-
-    console.log('📊 Final monthly values (REAL DATA ONLY):', { 
-      monthlyIncome: monthlyIncome.toFixed(2), 
-      monthlyExpenses: monthlyExpenses.toFixed(2) 
-    });
-
-    // Calculate savings rate
-    const savingsRate = monthlyIncome > 0 
-      ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 
-      : 0;
-
-    console.log('📊 Savings rate:', savingsRate.toFixed(1), '%');
-
-    // Calculate last month income and expenses
-    const lastMonthIncome = lastMonthTransactions
-      .filter((t: any) => parseFloat(t.amount) > 0 || t.type === 'income')
-      .reduce((sum: number, t: any) => sum + Math.abs(parseFloat(t.amount)), 0);
-
-    const lastMonthExpenses = lastMonthTransactions
-      .filter((t: any) => parseFloat(t.amount) < 0 || t.type === 'expense')
-      .reduce((sum: number, t: any) => sum + Math.abs(parseFloat(t.amount)), 0);
-
-    console.log('📈 Last month income:', lastMonthIncome);
-    console.log('📉 Last month expenses:', lastMonthExpenses);
-
-    // Calculate income change percentage
-    const incomeChangePercent = lastMonthIncome > 0 
-      ? ((monthlyIncome - lastMonthIncome) / lastMonthIncome * 100).toFixed(1)
-      : '0';
-
-    const expenseChangePercent = lastMonthExpenses > 0 
-      ? ((monthlyExpenses - lastMonthExpenses) / lastMonthExpenses * 100).toFixed(1)
-      : lastMonthExpenses === 0 && monthlyExpenses > 0 ? '+100' : '0';
-
-    // ============================================================
-    // FIND TOP SPENDING CATEGORY
-    // ============================================================
-
-    const categorySpending: Record<string, number> = {};
-    transactions
-      .filter((t: any) => parseFloat(t.amount) < 0 || t.type === 'expense')
-      .forEach((t: any) => {
-        const cat = t.category || 'Other';
-        categorySpending[cat] = (categorySpending[cat] || 0) + Math.abs(parseFloat(t.amount));
-      });
-
-    let topCategory = 'None';
-    let topAmount = 0;
-    Object.entries(categorySpending).forEach(([cat, amount]) => {
-      if (amount > topAmount) {
-        topAmount = amount;
-        topCategory = cat;
-      }
-    });
-
-    console.log('📊 Final stats (REAL DATA ONLY):', {
-      totalBalance,
-      monthlyIncome: monthlyIncome.toFixed(2),
-      monthlyExpenses: monthlyExpenses.toFixed(2),
-      savingsRate: savingsRate.toFixed(1),
-      topCategory,
-      incomeChange: incomeChangePercent,
-      expenseChange: expenseChangePercent
-    });
-
-    setStats({
-      totalBalance,
-      monthlyIncome,
-      monthlyExpenses,
-      savingsRate: Math.max(0, Math.min(100, savingsRate)),
-      previousMonthIncome: lastMonthIncome,
-      previousMonthExpenses: lastMonthExpenses,
-      topCategory: topCategory !== 'None' ? topCategory : undefined,
-      budgetStatus: { onTrack: 3, overBudget: 1 }
-    });
-
-    // ============================================================
-    // TRANSFORM RECENT ACTIVITY
-    // ============================================================
-
-    if (transactions.length > 0) {
-      const activity: RecentActivity[] = transactions.slice(0, 8).map((t: any) => {
-        const amount = parseFloat(t.amount);
-        const isIncome = amount > 0 || t.type === 'income';
-        const txDate = new Date(t.transaction_date || t.date);
-        const now = new Date();
-        const diffTime = Math.abs(now.getTime() - txDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        let timeString = '';
-        if (diffDays === 0) timeString = 'Today';
-        else if (diffDays === 1) timeString = 'Yesterday';
-        else if (diffDays < 7) timeString = `${diffDays} days ago`;
-        else if (diffDays < 30) timeString = `${Math.floor(diffDays / 7)} weeks ago`;
-        else timeString = `${Math.floor(diffDays / 30)} months ago`;
-
-        const activityType: 'income' | 'expense' = isIncome ? 'income' : 'expense';
-
-        return {
-          id: t.id,
-          title: t.description || t.category || (isIncome ? 'Income' : 'Expense'),
-          description: t.notes || '',
-          amount: Math.abs(amount),
-          type: activityType,
-          time: timeString,
-          date: t.transaction_date || t.date,
-          category: t.category,
-          icon: isIncome ? '💰' : '💸'
-        };
-      });
-
-      setRecentActivity(activity);
-    }
-
-  } catch (err) {
-    console.error('🔴 Error fetching dashboard data:', err);
-    setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
-    
-    // Fallback mock data - only used if API completely fails
-    setStats({
-      totalBalance: 0,
-      monthlyIncome: 0,
-      monthlyExpenses: 0,
-      savingsRate: 0,
-      previousMonthIncome: 0,
-      previousMonthExpenses: 0,
-      topCategory: undefined,
-      budgetStatus: { onTrack: 0, overBudget: 0 }
-    });
-    
-    setRecentActivity([]);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: 'ZAR',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
-  const formatCompactCurrency = (amount: number): string => {
-    if (amount >= 1000000) return `R${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `R${(amount / 1000).toFixed(1)}k`;
+  const formatCompactCurrency = (amount: number) => {
+    const abs = Math.abs(amount);
+    if (abs >= 1_000_000) return `R${(abs / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1000) return `R${(abs / 1000).toFixed(1)}k`;
     return formatCurrency(amount);
   };
 
-  const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const formatTimeAgo = (date: Date) => {
+    const diffDays = Math.ceil(Math.abs(Date.now() - date.getTime()) / 86_400_000);
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
   };
 
-  const getRandomGradient = (seed: string) => {
-    const colors = [
-      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      'linear-gradient(135deg, #00C853 0%, #64DD17 100%)',
-      'linear-gradient(135deg, #FF3D00 0%, #FF9100 100%)',
-      'linear-gradient(135deg, #2196F3 0%, #00BCD4 100%)',
-      'linear-gradient(135deg, #9C27B0 0%, #E1BEE7 100%)',
-      'linear-gradient(135deg, #F44336 0%, #FF9800 100%)',
-      'linear-gradient(135deg, #3F51B5 0%, #9FA8DA 100%)',
-      'linear-gradient(135deg, #009688 0%, #4DB6AC 100%)',
-    ];
-    const index = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-    return colors[index];
+  // ── Data fetch ──────────────────────────────────────────
+
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    setError(null);
+    setConnectionError(false);
+
+    try {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      // Connection check — only flag as error if fetch itself fails, not just non-200
+      // (a 404 on /health is fine; it means the server is up)
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { credentials: 'include' });
+      } catch {
+        setConnectionError(true);
+        setIsLoading(false);
+        return; // No point fetching data if we can't reach the server
+      }
+
+      const [categoriesData, accounts, rawTransactions, stats, incomeHistory] = await Promise.all([
+        fetchAndValidateArray<Category>(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/categories/categories/`,
+          CategorySchema, { credentials: 'include' }
+        ),
+        fetchAndValidateArray<Account>(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/`,
+          AccountSchema, { credentials: 'include' }
+        ),
+        fetchAndValidateArray<Transaction>(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/transactions/?limit=100`,
+          TransactionSchema, { credentials: 'include' }
+        ),
+        fetchAndValidate<IncomeStats>(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/stats/?year=${currentYear}`,
+          IncomeStatsSchema, { credentials: 'include' }
+        ),
+        fetchAndValidateArray<IncomeHistory>(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/income/history/?limit=100`,
+          IncomeHistorySchema, { credentials: 'include' }
+        ),
+      ]);
+
+      const transactions = rawTransactions.map(t => ({
+        ...t,
+        category: categoriesData.find(c => c.id === t.category_id),
+      }));
+
+      setIncomeStats(stats);
+
+      // Budgets — optional endpoint, don't fail the whole page
+      let budgetsData: any[] = [];
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/budgets/`, { credentials: 'include' });
+        if (res.ok) budgetsData = await res.json();
+      } catch { /* budgets unavailable — silently skip */ }
+
+      // ── Accounts ──
+      let totalAssets = 0;
+      let totalLiabilities = 0;
+      const liabilityTypes = ['CREDIT_CARD', 'LOAN', 'MORTGAGE', 'OVERDRAFT'];
+
+      for (const acc of accounts) {
+        const balance = typeof acc.balance === 'number' ? acc.balance : 0;
+        if (liabilityTypes.includes(acc.account_type)) {
+          totalLiabilities += Math.abs(balance);
+        } else {
+          totalAssets += balance;
+        }
+      }
+
+      setAssetsTotal(totalAssets);
+      setLiabilitiesTotal(totalLiabilities);
+      setTotalBalance(totalAssets - totalLiabilities);
+
+      // ── Monthly income ──
+      const thisMonthIncome = incomeHistory.filter(inc => {
+        const [y, m] = inc.received_date.split('-').map(Number);
+        return y === currentYear && m === currentMonth;
+      });
+      const monthlyIncomeTotal = thisMonthIncome.reduce((s, i) => s + i.amount, 0);
+      setMonthlyIncome(monthlyIncomeTotal);
+
+      // ── Monthly expenses ──
+      const thisMonthExpenses = transactions.filter(t => {
+        const d = new Date(t.transaction_date);
+        return d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear && t.transaction_type === 'expense';
+      });
+      const monthlyExpensesTotal = thisMonthExpenses.reduce((s, t) => s + Math.abs(t.amount), 0);
+      setMonthlyExpenses(monthlyExpensesTotal);
+      setSavingsRate(monthlyIncomeTotal > 0 ? ((monthlyIncomeTotal - monthlyExpensesTotal) / monthlyIncomeTotal) * 100 : 0);
+
+      // ── Recent activity ──
+      const activity: UIRecentTransaction[] = [
+        ...incomeHistory.slice(0, 5).map(inc => ({
+          id: `inc-${inc.id}`,
+          title: inc.notes || 'Income received',
+          category: 'Income',
+          date: formatTimeAgo(new Date(inc.received_date)),
+          amount: inc.amount,
+          type: 'income' as const,
+          status: inc.is_manual_entry ? 'Manual' : 'Auto',
+          icon: 'account_balance',
+          transaction_date: inc.received_date,
+        })),
+        ...transactions
+          .filter(t => t.transaction_type === 'expense')
+          .slice(0, 5)
+          .map(exp => ({
+            id: `exp-${exp.id}`,
+            title: exp.description,
+            category: exp.category?.name || 'Uncategorized',
+            date: formatTimeAgo(new Date(exp.transaction_date)),
+            amount: Math.abs(exp.amount),
+            type: 'expense' as const,
+            status: exp.is_recurring ? 'Recurring' : 'One-time',
+            icon: exp.category?.icon || 'shopping_cart',
+            transaction_date: exp.transaction_date,
+          })),
+      ];
+
+      activity.sort((a, b) =>
+        new Date(b.transaction_date || '').getTime() - new Date(a.transaction_date || '').getTime()
+      );
+      setRecentTransactions(activity.slice(0, 5));
+
+      // ── Budgets ──
+      if (budgetsData.length > 0) {
+        const startDate = new Date(currentYear, currentMonth - 1, 1);
+        const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+
+        setBudgets(
+          budgetsData.slice(0, 5).map((b: any) => {
+            const amount = typeof b.amount === 'string' ? parseFloat(b.amount) : b.amount;
+            const spent = transactions
+              .filter(t =>
+                t.category_id === b.category_id &&
+                t.transaction_type === 'expense' &&
+                new Date(t.transaction_date) >= startDate &&
+                new Date(t.transaction_date) <= endDate
+              )
+              .reduce((s, t) => s + Math.abs(t.amount), 0);
+
+            return {
+              id: b.id,
+              name: b.name,
+              amount,
+              spent,
+              remaining: amount - spent,
+              percentage: amount > 0 ? (spent / amount) * 100 : 0,
+              category_id: b.category_id,
+            };
+          })
+        );
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // ── Derived ──────────────────────────────────────────────
+
+  const userName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User';
+  const isNetWorthNegative = totalBalance < 0;
+  const avgBudgetUsage = budgets.length > 0
+    ? Math.round(budgets.reduce((s, b) => s + b.percentage, 0) / budgets.length)
+    : 0;
+
+  const budgetBarColor = (pct: number) =>
+    pct >= 100 ? '#ef4444' : pct >= 80 ? '#f97316' : '#00C853';
+
+  // ── Loading state ──────────────────────────────────────
 
   if (authLoading || isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p className="loading-text">Loading your financial dashboard...</p>
-        <p className="loading-subtext">Fetching your latest data</p>
+      <div className="dashboard-container">
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p className="loading-text">Loading your dashboard…</p>
+        </div>
       </div>
     );
   }
 
   if (!user) return null;
 
-  const incomeChangePercent = stats?.previousMonthIncome 
-    ? ((stats.monthlyIncome - stats.previousMonthIncome) / stats.previousMonthIncome * 100).toFixed(1)
-    : '0';
-
-  const expenseChangePercent = stats?.previousMonthExpenses
-    ? ((stats.monthlyExpenses - stats.previousMonthExpenses) / stats.previousMonthExpenses * 100).toFixed(1)
-    : '0';
+  // ── Render ────────────────────────────────────────────
 
   return (
     <div className="dashboard-container">
-      {/* Animated background */}
-      <div className="dashboard-bg">
-        <div className="bg-circle circle-1"></div>
-        <div className="bg-circle circle-2"></div>
-        <div className="bg-circle circle-3"></div>
-        <div className="bg-circle circle-4"></div>
-        <div className="za-flag-overlay"></div>
-      </div>
 
-      {/* Navigation */}
-      <nav className="dashboard-navbar glass-effect">
-        <div className="nav-container">
-          <Link href="/dashboard" className="navbar-brand">
-            <span className="brand-logo">🇿🇦</span>
-            <span className="brand-name">SpendWise<span className="brand-sa">SA</span></span>
-          </Link>
-          
-          <div className="navbar-links">
-            <Link href="/dashboard" className="nav-link active">
-              <Icons.Dashboard />
-              <span>Dashboard</span>
-            </Link>
-            <Link href="/dashboard/income" className="nav-link">
-              <Icons.Income />
-              <span>Income</span>
-            </Link>
-            <Link href="/dashboard/expenses" className="nav-link">
-              <Icons.Expenses />
-              <span>Expenses</span>
-            </Link>
-            <Link href="/dashboard/budgets" className="nav-link">
-              <Icons.Budget />
-              <span>Budgets</span>
-            </Link>
-            <Link href="/dashboard/reports" className="nav-link">
-              <Icons.Reports />
-              <span>Reports</span>
-            </Link>
+      {/* Top NavBar */}
+      <header className="top-navbar">
+        <div className="top-navbar-left">
+          <Link href="/dashboard" className="brand">FinTrackSA</Link>
+          <nav className="nav-links">
+            <Link href="/dashboard" className="nav-link active">Dashboard</Link>
+            <Link href="/dashboard/income" className="nav-link">Income</Link>
+            <Link href="/dashboard/expenses" className="nav-link">Expenses</Link>
+            <Link href="/dashboard/budgets" className="nav-link">Budgets</Link>
+            <Link href="/dashboard/reports" className="nav-link">Reports</Link>
+          </nav>
+        </div>
+        <div className="top-navbar-right">
+          <button className="icon-button" aria-label="Notifications">
+            <span className="material-symbols-outlined">notifications</span>
+          </button>
+          <div className="user-avatar" title={user.full_name || user.email}>
+            <div className="avatar-initials">{userName.charAt(0)}</div>
           </div>
-          
-          <div className="navbar-actions">
-            <button className="icon-button">
-              <Icons.Bell />
-              <span className="notification-badge">3</span>
-            </button>
-            <button className="icon-button">
-              <Icons.Settings />
-            </button>
-            <div className="user-menu">
-              <div className="user-avatar" style={{ background: getRandomGradient(user.email) }}>
-                {getInitials(user.full_name || user.email)}
-              </div>
-              <div className="user-dropdown">
-                <span className="user-name">{user.full_name || user.email}</span>
-                <span className="user-email">{user.email}</span>
-                <div className="dropdown-divider"></div>
-                <button onClick={handleLogout} className="dropdown-item">
-                  <Icons.Logout />
-                  <span>Sign out</span>
-                </button>
-              </div>
+        </div>
+      </header>
+
+      {/* Side NavBar */}
+      <aside className="side-navbar">
+        <div className="side-navbar-header">
+          <h2>FinTrackSA</h2>
+          <p>Private Wealth</p>
+        </div>
+        <nav className="side-nav-links">
+          <Link href="/dashboard" className="side-nav-link active"><span className="material-symbols-outlined">dashboard</span>Overview</Link>
+          <Link href="/dashboard/income" className="side-nav-link"><span className="material-symbols-outlined">trending_up</span>Income</Link>
+          <Link href="/dashboard/expenses" className="side-nav-link"><span className="material-symbols-outlined">trending_down</span>Expenses</Link>
+          <Link href="/dashboard/budgets" className="side-nav-link"><span className="material-symbols-outlined">receipt</span>Budgets</Link>
+          <Link href="/dashboard/reports" className="side-nav-link"><span className="material-symbols-outlined">analytics</span>Reports</Link>
+        </nav>
+        <Link href="/dashboard/expenses" className="new-transaction-btn">
+          <span className="material-symbols-outlined">add_circle</span>New Transaction
+        </Link>
+      </aside>
+
+      {/* Main Content */}
+      <main className="main-canvas">
+        <div className="canvas-container">
+
+          {/* Hero */}
+          <section className="hero-section">
+            <h1 className="hero-title">{greeting}, {userName}</h1>
+            <p className="hero-subtitle">Here is a summary of your wealth portfolio today.</p>
+          </section>
+
+          {/* Connection error */}
+          {connectionError && (
+            <div className="error-banner connection">
+              <p>⚠️ Cannot reach the backend. Check that the server is running.</p>
+              <button className="error-banner-retry" onClick={fetchDashboardData}>Retry</button>
             </div>
-          </div>
-        </div>
-      </nav>
+          )}
 
-      <main className="dashboard-content">
-        {/* Welcome Header */}
-        <div className="welcome-header">
-          <div>
-            <h1 className="welcome-title">
-              {greeting}, {user.full_name?.split(' ')[0] || 'User'}! 👋
-            </h1>
-            <p className="welcome-subtitle">
-              Here&apos;s what&apos;s happening with your finances today.
-            </p>
-          </div>
-          <div className="date-badge glass-effect">
-            <span className="date-day">{new Date().toLocaleDateString('en-ZA', { day: 'numeric' })}</span>
-            <span className="date-month">{new Date().toLocaleDateString('en-ZA', { month: 'short' })}</span>
-            <span className="date-year">{new Date().getFullYear()}</span>
-          </div>
-        </div>
+          {/* Data error (non-connection) */}
+          {error && !connectionError && (
+            <div className="error-banner warning">
+              <p>{error}</p>
+              <button className="error-banner-retry" onClick={fetchDashboardData}>Retry</button>
+            </div>
+          )}
 
-        {error && (
-          <div className="error-message glass-effect">
-            <p>{error}</p>
-            <button onClick={fetchDashboardData} className="retry-button">Retry</button>
-          </div>
-        )}
-
-        {/* Stats Grid */}
-        {stats && (
-          <>
-            <div className="stats-grid">
-              <div className="stat-card glass-effect hover-lift">
-                <div className="stat-header">
-                  <h3>Total Balance</h3>
-                  <Icons.PiggyBank />
-                </div>
-                <div className="stat-value">{formatCurrency(stats.totalBalance)}</div>
-                <div className="stat-footer">
-                  <span className="stat-label">Across all accounts</span>
-                  <span className="stat-trend positive">
-                    <Icons.TrendingUpZA /> +2.3%
-                  </span>
-                </div>
+          {/* Stat Grid */}
+          <div className="stat-grid">
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">Total Assets</span>
+                <span className="stat-badge">What you own</span>
               </div>
-
-              <div className="stat-card glass-effect hover-lift">
-                <div className="stat-header">
-                  <h3>Monthly Income</h3>
-                  <Icons.Income />
-                </div>
-                <div className="stat-value">{formatCurrency(stats.monthlyIncome)}</div>
-                <div className="stat-footer">
-                  <span className="stat-label">vs last month</span>
-                  <span className={`stat-trend ${parseFloat(incomeChangePercent) >= 0 ? 'positive' : 'negative'}`}>
-                    {parseFloat(incomeChangePercent) >= 0 ? <Icons.TrendingUp /> : <Icons.TrendingDown />}
-                    {Math.abs(parseFloat(incomeChangePercent))}%
-                  </span>
-                </div>
+              <div className="stat-value" style={{ color: 'var(--success)' }}>
+                {formatCurrency(assetsTotal)}
               </div>
-               
-              <div className="stat-card glass-effect hover-lift">
-                <div className="stat-header">
-                  <h3>Monthly Expenses</h3>
-                  <Icons.Expenses />
-                </div>
-                <div className="stat-value">{formatCurrency(stats.monthlyExpenses)}</div>
-                <div className="stat-footer">
-                  <span className="stat-label">vs last month</span>
-                  <span className={`stat-trend ${parseFloat(expenseChangePercent) <= 0 ? 'positive' : 'negative'}`}>
-                    {parseFloat(expenseChangePercent) <= 0 ? <Icons.TrendingDown /> : <Icons.TrendingUp />}
-                    {Math.abs(parseFloat(expenseChangePercent))}%
-                  </span>
-                </div>
-              </div>
-
-              <div className="stat-card glass-effect hover-lift">
-                <div className="stat-header">
-                  <h3>Savings Rate</h3>
-                  <Icons.Flag />
-                </div>
-                <div className="stat-value">{stats.savingsRate.toFixed(1)}%</div>
-                <div className="stat-footer">
-                  <span className="stat-label">of monthly income</span>
-                  <span className="stat-trend">
-                    <span className="savings-bar">
-                      <span className="savings-fill" style={{ width: `${stats.savingsRate}%` }}></span>
-                    </span>
-                  </span>
-                </div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar" style={{ width: `${Math.min(100, (assetsTotal / 100_000) * 100)}%` }} />
               </div>
             </div>
 
-            {/* Income Overview Card */}
-            {incomeStats && (
-              <div className="income-overview-card glass-effect">
-                <div className="card-header">
-                  <h2>Annual Overview</h2>
-                  <span className="badge">YTD</span>
-                </div>
-                <div className="income-stats-grid">
-                  <div className="income-stat-item">
-                    <span className="stat-label">Total Income</span>
-                    <span className="stat-value">{formatCompactCurrency(incomeStats.total_annual_income)}</span>
-                  </div>
-                  <div className="income-stat-item">
-                    <span className="stat-label">Monthly Avg</span>
-                    <span className="stat-value">{formatCompactCurrency(incomeStats.average_monthly_income)}</span>
-                  </div>
-                  <div className="income-stat-item">
-                    <span className="stat-label">Next Month</span>
-                    <span className="stat-value predicted">{formatCompactCurrency(incomeStats.predicted_next_month)}</span>
-                  </div>
-                  <div className="income-stat-item">
-                    <span className="stat-label">Tax Paid</span>
-                    <span className="stat-value">{formatCompactCurrency(incomeStats.total_tax_paid)}</span>
-                  </div>
-                  <div className="income-stat-item highlight">
-                    <span className="stat-label">Net Income</span>
-                    <span className="stat-value">{formatCompactCurrency(incomeStats.net_annual_income)}</span>
-                  </div>
-                </div>
-                <div className="income-sources">
-                  <div className="source-tag">
-                    <span>Top source: {incomeStats.top_source_name}</span>
-                    <span>{formatCompactCurrency(incomeStats.top_source_amount)}</span>
-                  </div>
-                  <div className="source-tag">
-                    <span>Recurring: {incomeStats.recurring_income_count} sources</span>
-                    <span>One-time: {incomeStats.one_time_income_count}</span>
-                  </div>
-                </div>
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">Total Liabilities</span>
+                <span className="stat-badge">What you owe</span>
               </div>
-            )}
-
-            {/* Categories & Recent Activity */}
-            <div className="dashboard-grid">
-              <div className="categories-section glass-effect">
-                <div className="section-header">
-                  <h2>Budget Overview</h2>
-                  <Link href="/dashboard/budgets" className="view-all">View all →</Link>
-                </div>
-                <div className="categories-list">
-                  {categories.map((category) => (
-                    <div key={category.id} className="category-item">
-                      <div className="category-info">
-                        <span className="category-dot" style={{ backgroundColor: category.color }}></span>
-                        <span className="category-name">{category.name}</span>
-                      </div>
-                      <div className="category-progress">
-                        <div className="progress-bar">
-                          <div 
-                            className="progress-fill" 
-                            style={{ 
-                              width: `${category.budget && category.spent ? (category.spent / category.budget * 100) : 0}%`,
-                              backgroundColor: category.color 
-                            }}
-                          ></div>
-                        </div>
-                        <div className="category-amounts">
-                          <span>{formatCompactCurrency(category.spent || 0)}</span>
-                          <span className="category-limit">/ {formatCompactCurrency(category.budget || 0)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {stats.budgetStatus && (
-                  <div className="budget-summary">
-                    <div className="budget-stat">
-                      <span className="stat-value">{stats.budgetStatus.onTrack}</span>
-                      <span className="stat-label">On track</span>
-                    </div>
-                    <div className="budget-stat">
-                      <span className="stat-value">{stats.budgetStatus.overBudget}</span>
-                      <span className="stat-label">Over budget</span>
-                    </div>
-                  </div>
-                )}
+              <div className="stat-value" style={{ color: 'var(--error)' }}>
+                {formatCurrency(liabilitiesTotal)}
               </div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar" style={{ width: `${Math.min(100, (liabilitiesTotal / 100_000) * 100)}%`, backgroundColor: 'var(--error)' }} />
+              </div>
+            </div>
 
-              <div className="recent-activity-section glass-effect">
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">Net Worth</span>
+                <span className="stat-badge">Assets − Liabilities</span>
+              </div>
+              <div className={`stat-value${isNetWorthNegative ? ' negative' : ''}`}>
+                {formatCurrency(totalBalance)}
+              </div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar" style={{ width: `${Math.min(100, (Math.abs(totalBalance) / 100_000) * 100)}%` }} />
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">Monthly Income</span>
+                <span className="material-symbols-outlined" style={{ color: 'var(--secondary)', fontSize: '18px' }}>trending_up</span>
+              </div>
+              <div className="stat-value">{formatCompactCurrency(monthlyIncome)}</div>
+              <p className="stat-subtitle">Deposited this month</p>
+            </div>
+          </div>
+
+          {/* Bento Layout */}
+          <div className="dashboard-bento">
+
+            {/* Left column */}
+            <div className="left-column">
+
+              {/* Recent Activity */}
+              <div className="activity-section">
                 <div className="section-header">
-                  <h2>Recent Activity</h2>
-                  {recentActivity.length > 0 && (
-                    <Link href="/dashboard/transactions" className="view-all">View all →</Link>
+                  <h3 className="section-title">Recent Activity</h3>
+                  <Link href="/dashboard/expenses" className="view-link">View all →</Link>
+                </div>
+                <div className="transaction-list">
+                  {recentTransactions.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No transactions yet.</p>
+                      <Link href="/dashboard/expenses" className="view-link">Add your first expense</Link>
+                    </div>
+                  ) : (
+                    recentTransactions.map(tx => (
+                      <div key={tx.id} className="transaction-item">
+                        <div className="transaction-left">
+                          <div className="transaction-icon">
+                            <span className="material-symbols-outlined">{tx.icon}</span>
+                          </div>
+                          <div className="transaction-details">
+                            <div className="transaction-title">{tx.title}</div>
+                            <div className="transaction-meta">{tx.category} · {tx.date}</div>
+                          </div>
+                        </div>
+                        <div className="transaction-right">
+                          <div className={`transaction-amount ${tx.type === 'income' ? 'positive' : 'negative'}`}>
+                            {tx.type === 'income' ? '+' : '−'}{formatCompactCurrency(tx.amount)}
+                          </div>
+                          <div className="transaction-status">{tx.status}</div>
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
-                {recentActivity.length === 0 ? (
+              </div>
+
+              {/* Monthly Budget */}
+              <div className="budget-section">
+                <div className="budget-header">
+                  <h3 className="section-title">Monthly Budget</h3>
+                  <span className="budget-warning">
+                    {budgets.length > 0 ? `${avgBudgetUsage}% avg used` : 'No budgets set'}
+                  </span>
+                </div>
+
+                {budgets.length === 0 ? (
                   <div className="empty-state">
-                    <div className="empty-icon">📝</div>
-                    <h3>No transactions yet</h3>
-                    <p>Add your first transaction to get started</p>
-                    <Link href="/dashboard/transactions/add" className="btn-primary">
-                      Add Transaction
-                    </Link>
+                    <p>No budgets created yet.</p>
+                    <Link href="/dashboard/budgets" className="view-link">Create a budget</Link>
                   </div>
                 ) : (
-                  <div className="activity-timeline">
-                    {recentActivity.map((activity, index) => (
-                      <div key={activity.id} className="timeline-item">
-                        <div className={`timeline-icon ${activity.type}`}>
-                          {activity.type === 'income' ? '💰' : '💸'}
-                        </div>
-                        <div className="timeline-content">
-                          <div className="timeline-header">
-                            <h4>{activity.title}</h4>
-                            <span className={`timeline-amount ${activity.type}`}>
-                              {activity.type === 'income' ? '+' : '-'}
-                              {formatCompactCurrency(activity.amount)}
-                            </span>
-                          </div>
-                          <p className="timeline-description">{activity.description}</p>
-                          <div className="timeline-footer">
-                            <span className="timeline-category">{activity.category}</span>
-                            <span className="timeline-time">{activity.time}</span>
-                          </div>
-                        </div>
-                        {index < recentActivity.length - 1 && <div className="timeline-connector"></div>}
+                  budgets.map(budget => (
+                    <div key={budget.id} className="budget-item">
+                      <div className="budget-label">
+                        <span className="budget-name">{budget.name}</span>
+                        <span className="budget-amount">
+                          {formatCompactCurrency(budget.spent)} / {formatCompactCurrency(budget.amount)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="budget-bar">
+                        <div
+                          className="budget-bar-fill"
+                          style={{
+                            width: `${Math.min(100, budget.percentage)}%`,
+                            backgroundColor: budgetBarColor(budget.percentage),
+                          }}
+                        />
+                      </div>
+                      <div className="budget-stats">
+                        <span className={`budget-percentage ${budget.percentage >= 100 ? 'danger' : budget.percentage >= 80 ? 'warning' : 'success'}`}>
+                          {budget.percentage.toFixed(0)}% used
+                        </span>
+                        {budget.spent > budget.amount && (
+                          <span className="budget-over">
+                            Over by {formatCompactCurrency(budget.spent - budget.amount)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
+
             </div>
 
-            {/* Quick Actions */}
-            <div className="quick-actions-section">
-              <h2>Quick Actions</h2>
-              <div className="quick-actions-grid">
-                <Link href="/dashboard/income/add" className="quick-action-card glass-effect hover-lift">
-                  <div className="quick-action-icon income-gradient">
-                    <Icons.Income />
-                  </div>
-                  <span>Add Income</span>
-                </Link>
-                <Link href="/dashboard/expenses/add" className="quick-action-card glass-effect hover-lift">
-                  <div className="quick-action-icon expense-gradient">
-                    <Icons.Expenses />
-                  </div>
-                  <span>Add Expense</span>
-                </Link>
-                <Link href="/dashboard/budgets/create" className="quick-action-card glass-effect hover-lift">
-                  <div className="quick-action-icon budget-gradient">
-                    <Icons.Budget />
-                  </div>
-                  <span>Create Budget</span>
-                </Link>
-                <button onClick={fetchDashboardData} className="quick-action-card glass-effect hover-lift">
-                  <div className="quick-action-icon refresh-gradient">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                    </svg>
-                  </div>
-                  <span>Refresh</span>
-                </button>
+            {/* Right column */}
+            <div className="right-column">
+
+              {/* Quick Actions */}
+              <div className="quick-actions">
+                <h3 className="section-title">Quick Actions</h3>
+                <div className="quick-actions-grid">
+                  <Link href="/dashboard/expenses" className="quick-action-btn primary">
+                    <span className="material-symbols-outlined">add</span>
+                    <span>Expense</span>
+                  </Link>
+                  <Link href="/dashboard/income" className="quick-action-btn secondary">
+                    <span className="material-symbols-outlined">trending_up</span>
+                    <span>Income</span>
+                  </Link>
+                  <Link href="/dashboard/budgets" className="quick-action-btn tertiary">
+                    <span className="material-symbols-outlined">receipt</span>
+                    <span>Budget</span>
+                  </Link>
+                  <button onClick={fetchDashboardData} className="quick-action-btn surface">
+                    <span className="material-symbols-outlined">refresh</span>
+                    <span>Refresh</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Annual Overview */}
+              {incomeStats && (
+                <div className="card-widget">
+                  <div className="card-widget-badge">Annual Overview · {new Date().getFullYear()}</div>
+                  <div className="card-widget-row">
+                    <span>Total Income</span>
+                    <span>{formatCompactCurrency(incomeStats.total_annual_income)}</span>
+                  </div>
+                  <div className="card-widget-row">
+                    <span>Net Income</span>
+                    <span>{formatCompactCurrency(incomeStats.net_annual_income)}</span>
+                  </div>
+                  <div className="card-widget-row">
+                    <span>Top Source</span>
+                    <span>{incomeStats.top_source_name}</span>
+                  </div>
+                  <div className="card-bg-decoration" />
+                </div>
+              )}
+
+              {/* Security Banner */}
+              <div className="security-banner">
+                <div className="security-icon">
+                  <span className="material-symbols-outlined">shield</span>
+                </div>
+                <div>
+                  <div className="security-title">Security: Strong</div>
+                  <div className="security-text">
+                    Your account is protected with secure authentication and encrypted storage.
+                  </div>
+                </div>
+              </div>
+
             </div>
-          </>
-        )}
+          </div>
+
+          {/* Footer */}
+          <footer className="dashboard-footer">
+            <div className="footer-copyright">
+              FinTrackSA Wealth Management © {new Date().getFullYear()}
+            </div>
+            <div className="footer-links">
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/help">Help Centre</Link>
+            </div>
+          </footer>
+
+        </div>
       </main>
+
+      <button className="fab-mobile" aria-label="New transaction" onClick={() => { }}>
+        <span className="material-symbols-outlined">add</span>
+      </button>
+
     </div>
   );
 }

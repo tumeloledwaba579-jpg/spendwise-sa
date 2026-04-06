@@ -9,59 +9,86 @@ interface BudgetCardProps {
   formatCurrency: (amount: number) => string;
 }
 
+// Threshold constants
+const BUDGET_WARNING_THRESHOLD = 85;
+const BUDGET_LIMIT = 100;
+const DEFAULT_CATEGORY_COLOR = '#667eea';
+
+interface BudgetStatus {
+  statusClass: string;
+  progressColor: string;
+  percentageClass: string;
+}
+
 export default function BudgetCard({ budget, onEdit, onDelete, formatCurrency }: BudgetCardProps) {
-  const getStatusClass = () => {
-    if (budget.percentage >= 100) return 'over-budget';
-    if (budget.percentage >= 85) return 'warning';
-    return 'on-track';
+  // Consolidated budget status logic
+  const getBudgetStatus = (): BudgetStatus => {
+    const percentage = budget.percentage ?? 0;
+
+    if (percentage >= BUDGET_LIMIT) {
+      return {
+        statusClass: 'over-budget',
+        progressColor: '#FF3D00',
+        percentageClass: 'over'
+      };
+    }
+
+    if (percentage >= BUDGET_WARNING_THRESHOLD) {
+      return {
+        statusClass: 'warning',
+        progressColor: '#FFA000',
+        percentageClass: 'warning'
+      };
+    }
+
+    return {
+      statusClass: 'on-track',
+      progressColor: '#00C853',
+      percentageClass: 'good'
+    };
   };
 
-  const getProgressColor = () => {
-    if (budget.percentage >= 100) return '#FF3D00';
-    if (budget.percentage >= 85) return '#FFA000';
-    return '#00C853';
-  };
-
-  const getPercentageClass = () => {
-    if (budget.percentage >= 100) return 'over';
-    if (budget.percentage >= 85) return 'warning';
-    return 'good';
-  };
+  const status = getBudgetStatus();
+  const categoryColor = budget.category_color ?? DEFAULT_CATEGORY_COLOR;
+  const categoryName = budget.category_name ?? 'Uncategorized';
+  const spent = budget.spent ?? 0;
+  const remaining = budget.remaining ?? 0;
+  const percentage = budget.percentage ?? 0;
 
   return (
-    <div className={`budget-card ${getStatusClass()}`}>
+    <div className={`budget-card ${status.statusClass}`}>
       <div className="budget-header">
         <div className="budget-category">
-          <div 
-            className="category-color" 
-            style={{ backgroundColor: budget.category_color || '#667eea' }}
+          <div
+            className="category-color"
+            style={{ backgroundColor: categoryColor }}
           />
-          <h3>{budget.category_name}</h3>
+          <h3>{categoryName}</h3>
         </div>
         <div className="budget-amounts">
           <div className="budget-limit">{formatCurrency(budget.amount)}</div>
-          <div className="budget-spent">Spent: {formatCurrency(budget.spent)}</div>
+          <div className="budget-spent">Spent: {formatCurrency(spent)}</div>
         </div>
       </div>
 
       <div className="progress-container">
         <div className="progress-bar">
-          <div 
+          <div
             className="progress-fill"
-            style={{ 
-              width: `${Math.min(budget.percentage, 100)}%`,
-              backgroundColor: getProgressColor()
+            style={{
+              width: `${Math.min(percentage, 100)}%`,
+              backgroundColor: status.progressColor
             }}
           />
         </div>
         <div className="progress-stats">
-          <span className={`progress-percentage ${getPercentageClass()}`}>
-            {budget.percentage.toFixed(1)}%
+          <span className={`progress-percentage ${status.percentageClass}`}>
+            {percentage.toFixed(1)}%
           </span>
           <span className="progress-remaining">
-            {budget.remaining >= 0 
-              ? `${formatCurrency(budget.remaining)} left`
-              : `${formatCurrency(Math.abs(budget.remaining))} over`}
+            {remaining >= 0
+              ? `${formatCurrency(remaining)} left`
+              : `${formatCurrency(Math.abs(remaining))} over`}
           </span>
         </div>
       </div>
